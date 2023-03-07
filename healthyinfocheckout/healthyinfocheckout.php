@@ -28,9 +28,38 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+/**
+ * Class HealthyInfoCheckOut
+ */
 class HealthyInfoCheckOut extends Module
 {
     protected $config_form = false;
+
+    const PREFIX = 'ps_';
+
+    /** @var string $_html */
+    private $_html = '';
+
+    /** @var array $_postErrors */
+    private $_postErrors = array();
+
+    /** @var string $header */
+    protected $header;
+
+    /** @var string $BASE_ENDPOINT */
+    protected $BASE_ENDPOINT;
+
+    /** @var string $LOGIN_ENDPOINT */
+    protected $LOGIN_ENDPOINT;
+
+    /** @var array $_hooks */
+    private $_hooks;
+
+    /** @var string $messageService */
+    private $messageService;
+
+    /** @var string $authError */
+    private $authError;
 
     public function __construct()
     {
@@ -38,21 +67,28 @@ class HealthyInfoCheckOut extends Module
         $this->tab = 'checkout';
         $this->version = '1.0.0';
         $this->author = 'Tess';
-        $this->need_instance = 1;
-
-        /**
-         * Set $this->bootstrap to true if your module is compliant with bootstrap (PrestaShop 1.6)
-         */
-        $this->bootstrap = true;
-
+        $this->need_instance = 0;
+        $this->bootstrap = TRUE;
         parent::__construct();
 
-        $this->displayName = $this->l('Auth by uber API SDK and checkout with healthy question');
+
+        $this->displayName = $this->l('HealthyQ');
         $this->description = $this->l('Auth by uber API SDK and checkout with healthy question');
 
-        $this->confirmUninstall = $this->l('Are you sure want to install module ?');
+        $this->confirmUninstall = $this->l('Voulez-vous vraiment désinstaller ?', $this->name);
 
-        $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
+        $this->header = ['Content-Type: application/json', 'Accept: application/json', 'User-Agent:' . $_SERVER['HTTP_USER_AGENT']];
+
+        $this->ps_versions_compliancy = array(
+            'min' => '1.6.1',
+            'max' => _PS_VERSION_,
+        );
+
+        $this->_hooks = array('header', 'displayBackOfficeHeader', 'displayOrderConfirmation', 'displayAdminOrder', 'actionOrderStatusPostUpdate', 'displayBeforeCarrier', 'actionOrderStatusUpdate', 'actionValidateOrder', 'actionPaymentConfirmation', 'actionValidateOrderAfter', 'displayFeatureForm');
+        $this->BASE_ENDPOINT = 'https://login.uber.com/';
+        $this->LOGIN_ENDPOINT = $this->BASE_ENDPOINT . 'oauth/v2/token';
+        $this->messageService = "Si vous n'avez pas accès et clé secrète, veuillez contacter le service client";
+        $this->authError = 'Veuillez vérifier vos clés d\'identification';
     }
 
     /**
@@ -61,15 +97,23 @@ class HealthyInfoCheckOut extends Module
      */
     public function install()
     {
-        Configuration::updateValue('HEALTHYINFOCHECKOUT_LIVE_MODE', false);
+        if (extension_loaded('curl') == false) {
+            $this->_errors[] = $this->l('You have to enable the cURL extension on your server to install this module');
+            return false;
+        }
 
-        return parent::install() &&
-            $this->registerHook('header') &&
-            $this->registerHook('displayBackOfficeHeader') &&
-            $this->registerHook('actionObjectCustomerAddAfter') &&
-            $this->registerHook('displayAdminOrder') &&
-            $this->registerHook('displayFeatureForm') &&
-            $this->registerHook('displayOrderConfirmation');
+        if (parent::install()) {
+            foreach ($this->_hooks as $hook) {
+                if (!$this->registerHook($hook)) {
+                    return FALSE;
+                }
+            }
+            // If install set setting configuration and delete older version to avoid conflict
+            $this->setConfigurationValues();
+
+            return TRUE;
+        }
+        return FALSE;
     }
 
     public function uninstall()
@@ -90,6 +134,17 @@ class HealthyInfoCheckOut extends Module
         Configuration::deleteByName('UBER_SECRET_KEY');
 
         return FALSE;
+    }
+    /**
+     * @return bool
+     */
+    public function setConfigurationValues()
+    {
+        // Uber account setting
+        Configuration::updateValue('UBER_ACCESS_KEY', '');
+        Configuration::updateValue('UBER_SECRET_KEY', '');
+
+        return true;
     }
 
     /**

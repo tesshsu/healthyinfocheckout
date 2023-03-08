@@ -1,5 +1,4 @@
-<?php
-/**
+{*
 * 2007-2023 PrestaShop
 *
 * NOTICE OF LICENSE
@@ -22,17 +21,24 @@
 *  @copyright 2007-2023 PrestaShop SA
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
-*/
+*}
 
-/**
- * In some cases you should not drop the tables.
- * Maybe the merchant will just try to reset the module
- * but does not want to loose all of the data associated to the module.
- */
-$sql = array();
+<p>{$my_custom_text}</p>
+<div class="form-group">
+	<label for="health_insurance">{l s='Do you have health insurance?'}</label>
+	<select class="form-control" name="health_insurance" id="health_insurance">
+		<option value="">{l s='Select an option'}</option>
+		<option value="yes">{l s='Yes'}</option>
+		<option value="no">{l s='No'}</option>
+	</select>
+</div>
 
-foreach ($sql as $query) {
-    if (Db::getInstance()->execute($query) == false) {
-        return false;
-    }
-}
+<div class="form-group">
+	<label for="prescription">{l s='Do you have a prescription?'}</label>
+	<select class="form-control" name="prescription" id="prescription">
+		<option value="">{l s='Select an option'}</option>
+		<option value="yes">{l s='Yes'}</option>
+		<option value="no">{l s='No'}</option>
+	</select>
+</div>
+

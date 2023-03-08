@@ -1,58 +1,97 @@
 <?php
 /**
-* 2007-2023 PrestaShop
-*
-* NOTICE OF LICENSE
-*
-* This source file is subject to the Academic Free License (AFL 3.0)
-* that is bundled with this package in the file LICENSE.txt.
-* It is also available through the world-wide-web at this URL:
-* http://opensource.org/licenses/afl-3.0.php
-* If you did not receive a copy of the license and are unable to
-* obtain it through the world-wide-web, please send an email
-* to license@prestashop.com so we can send you a copy immediately.
-*
-* DISCLAIMER
-*
-* Do not edit or add to this file if you wish to upgrade PrestaShop to newer
-* versions in the future. If you wish to customize PrestaShop for your
-* needs please refer to http://www.prestashop.com for more information.
-*
-*  @author    PrestaShop SA <contact@prestashop.com>
-*  @copyright 2007-2023 PrestaShop SA
-*  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
-*  International Registered Trademark & Property of PrestaShop SA
-*/
+ * 2007-2023 PrestaShop
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Academic Free License (AFL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/afl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@prestashop.com so we can send you a copy immediately.
+ *
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade PrestaShop to newer
+ * versions in the future. If you wish to customize PrestaShop for your
+ * needs please refer to http://www.prestashop.com for more information.
+ *
+ *  @author    PrestaShop SA <contact@prestashop.com>
+ *  @copyright 2007-2023 PrestaShop SA
+ *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+ *  International Registered Trademark & Property of PrestaShop SA
+ */
 
 if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+/**
+ * Class HealthyInfoCheckOut
+ */
 class HealthyInfoCheckOut extends Module
 {
     protected $config_form = false;
 
+    const PREFIX = 'ps_';
+
+    /** @var string $_html */
+    private $_html = '';
+
+    /** @var array $_postErrors */
+    private $_postErrors = array();
+
+    /** @var string $header */
+    protected $header;
+
+    /** @var string $BASE_ENDPOINT */
+    protected $BASE_ENDPOINT;
+
+    /** @var string $LOGIN_ENDPOINT */
+    protected $LOGIN_ENDPOINT;
+
+    /** @var array $_hooks */
+    private $_hooks;
+
+    /** @var string $authToken */
+    protected $authToken = NULL;
+
+    /** @var string $messageService */
+    private $messageService;
+
+    /** @var string $authError */
+    private $authError;
+
     public function __construct()
     {
         $this->name = 'healthyinfocheckout';
-        $this->tab = 'checkout';
+        $this->tab = 'front_office_features';
         $this->version = '1.0.0';
         $this->author = 'Tess';
-        $this->need_instance = 1;
-
-        /**
-         * Set $this->bootstrap to true if your module is compliant with bootstrap (PrestaShop 1.6)
-         */
-        $this->bootstrap = true;
-
+        $this->need_instance = 0;
+        $this->bootstrap = TRUE;
         parent::__construct();
 
-        $this->displayName = $this->l('Auth by uber API SDK and checkout with healthy question');
-        $this->description = $this->l('Auth by uber API SDK and checkout with healthy question');
 
-        $this->confirmUninstall = $this->l('Are you sure want to install module ?');
+        $this->displayName = $this->l('HealthyQ');
+        $this->description = $this->l('Adds extra questions about health insurance and prescription to the checkout page');
 
-        $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
+        $this->confirmUninstall = $this->l('Voulez-vous vraiment désinstaller ?', $this->name);
+
+        $this->header = ['Content-Type: application/json', 'Accept: application/json', 'User-Agent:' . $_SERVER['HTTP_USER_AGENT']];
+
+        $this->ps_versions_compliancy = array(
+            'min' => '1.6.1',
+            'max' => _PS_VERSION_,
+        );
+
+        $this->_hooks = array('header', 'displayCheckoutForm', 'displayOrderConfirmation', 'displayAdminOrder', 'actionOrderStatusPostUpdate', 'displayBeforeCarrier', 'actionOrderStatusUpdate', 'actionValidateOrder', 'actionPaymentConfirmation', 'actionValidateOrderAfter', 'displayFeatureForm');
+        $this->BASE_ENDPOINT = 'https://dev-opzbl59r.auth0.com/';
+        $this->LOGIN_ENDPOINT = $this->BASE_ENDPOINT . 'oauth/token';
+        $this->messageService = "Si vous n'avez pas accès et clé secrète, veuillez contacter le service client";
+        $this->authError = 'Veuillez vérifier vos clés d\'identification';
     }
 
     /**
@@ -61,15 +100,23 @@ class HealthyInfoCheckOut extends Module
      */
     public function install()
     {
-        Configuration::updateValue('HEALTHYINFOCHECKOUT_LIVE_MODE', false);
+        if (extension_loaded('curl') == false) {
+            $this->_errors[] = $this->l('You have to enable the cURL extension on your server to install this module');
+            return false;
+        }
 
-        return parent::install() &&
-            $this->registerHook('header') &&
-            $this->registerHook('displayBackOfficeHeader') &&
-            $this->registerHook('actionObjectCustomerAddAfter') &&
-            $this->registerHook('displayAdminOrder') &&
-            $this->registerHook('displayFeatureForm') &&
-            $this->registerHook('displayOrderConfirmation');
+        if (parent::install()) {
+            foreach ($this->_hooks as $hook) {
+                if (!$this->registerHook($hook)) {
+                    return FALSE;
+                }
+            }
+            // If install set setting configuration
+            $this->setConfigurationValues();
+
+            return TRUE;
+        }
+        return FALSE;
     }
 
     public function uninstall()
@@ -80,43 +127,36 @@ class HealthyInfoCheckOut extends Module
                     return FALSE;
                 }
             }
-            if (!$this->deleteCarriers()) {
-                return FALSE;
-            }
             return TRUE;
         }
-
-        Configuration::deleteByName('UBER_ACCESS_KEY');
-        Configuration::deleteByName('UBER_SECRET_KEY');
-
         return FALSE;
     }
-
     /**
-     * Load the configuration form
+     * @return bool
      */
-    public function getContent()
+    public function setConfigurationValues()
     {
-        /**
-         * If values have been submitted in the form, process.
-         */
-        if (((bool)Tools::isSubmit('submitHealthyInfoCheckOutModule')) == true) {
-            $this->postProcess();
-        }
+        // Auth account setting
+        Configuration::updateValue('client_id', '');
+        Configuration::updateValue('client_secret', '');
+        Configuration::updateValue('audience', 'https://dev-opzbl59r.auth0.com/api/v2/');
+        Configuration::updateValue('grant_type', 'client_credentials');
 
-        $this->context->smarty->assign('module_dir', $this->_path);
 
-        $output = $this->context->smarty->fetch($this->local_path.'views/templates/admin/configure.tpl');
-
-        return $output.$this->renderForm();
+        return true;
     }
     public function login()
     {
-        $accessKey = Configuration::get('UBER_ACCESS_KEY');
-        $secretKey = Configuration::get('UBER_SECRET_KEY');
+        $accessKey = Configuration::get('client_id');
+        $secretKey = Configuration::get('client_secret');
+        $audience = Configuration::get('audience');
+        $grant_type = Configuration::get('client_credentials');
+
         if ($this->authToken == NULL && $accessKey != "" && $secretKey != "") {
             $data['accessKey'] = $accessKey;
             $data['secretKey'] = $secretKey;
+            $data['audience'] = $audience;
+            $data['grant_type'] = $grant_type ;
             $loginData = $this->getDataFromResponse($this->callApi("POST",$this->LOGIN_ENDPOINT, $this->header, json_encode($data)));
             $loginAuth = $loginData['auth'];
 
@@ -128,148 +168,170 @@ class HealthyInfoCheckOut extends Module
         }
         return false;
     }
-
-    /**
-     * Create the form that will be displayed in the configuration of your module.
-     */
-    protected function renderForm()
+    private function callApi($method, $url, $header, $data = false)
     {
-        $helper = new HelperForm();
+        $returnArray['error'] = 1;
+        if ($this->curl_installed()) {
+            $handle = curl_init($url);
+            switch ($method)
+            {
+                case "POST":
+                    curl_setopt($handle, CURLOPT_POST, 1);
 
-        $helper->show_toolbar = false;
-        $helper->table = $this->table;
-        $helper->module = $this;
-        $helper->default_form_language = $this->context->language->id;
-        $helper->allow_employee_form_lang = Configuration::get('PS_BO_ALLOW_EMPLOYEE_FORM_LANG', 0);
-
-        $helper->identifier = $this->identifier;
-        $helper->submit_action = 'submitHealthyInfoCheckOutModule';
-        $helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false)
-            .'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name;
-        $helper->token = Tools::getAdminTokenLite('AdminModules');
-
-        $helper->tpl_vars = array(
-            'fields_value' => $this->getConfigFormValues(), /* Add values for your inputs */
-            'languages' => $this->context->controller->getLanguages(),
-            'id_language' => $this->context->language->id,
-        );
-
-        return $helper->generateForm(array($this->getConfigForm()));
+                    if ($data)
+                        curl_setopt($handle, CURLOPT_POSTFIELDS, $data);
+                    break;
+                case "PUT":
+                    curl_setopt($handle, CURLOPT_PUT, 1);
+                    break;
+                default:
+                    if ($data)
+                        $url = sprintf("%s?%s", $url, http_build_query($data));
+            }
+            curl_setopt($handle, CURLOPT_POSTFIELDS, $data);
+            curl_setopt($handle, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($handle, CURLOPT_HTTPHEADER, $header);
+            curl_setopt($handle, CURLOPT_SSL_VERIFYPEER, false);
+            $response = curl_exec($handle);
+            $httpcode = curl_getinfo($handle, CURLINFO_HTTP_CODE);
+            $err = curl_error($handle);
+            curl_close($handle);
+            if ($err) {
+                $returnArray['error'] = 1;
+                $returnArray['data'] = $err;
+                $returnArray['response'] = $response;
+                echo "cURL Error #:" . $err;
+            } else {
+                if ($httpcode == '200') {
+                    $returnArray['error'] = 0;
+                    $returnArray['data'] = $response;
+                }
+            }
+        }
+        return $returnArray;
     }
-
-    /**
-     * Create the structure of your form.
-     */
-    protected function getConfigForm()
+    private function getDataFromResponse($response)
     {
-        return array(
-            'form' => array(
-                'legend' => array(
-                'title' => $this->l('Settings'),
-                'icon' => 'icon-cogs',
-                ),
-                'input' => array(
-                    array(
-                        'type' => 'switch',
-                        'label' => $this->l('Live mode'),
-                        'name' => 'HEALTHYINFOCHECKOUT_LIVE_MODE',
-                        'is_bool' => true,
-                        'desc' => $this->l('Use this module in live mode'),
-                        'values' => array(
-                            array(
-                                'id' => 'active_on',
-                                'value' => true,
-                                'label' => $this->l('Enabled')
-                            ),
-                            array(
-                                'id' => 'active_off',
-                                'value' => false,
-                                'label' => $this->l('Disabled')
-                            )
-                        ),
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'prefix' => '<i class="icon icon-envelope"></i>',
-                        'desc' => $this->l('Enter a valid email address'),
-                        'name' => 'HEALTHYINFOCHECKOUT_ACCOUNT_EMAIL',
-                        'label' => $this->l('Email'),
-                    ),
-                    array(
-                        'type' => 'password',
-                        'name' => 'HEALTHYINFOCHECKOUT_ACCOUNT_PASSWORD',
-                        'label' => $this->l('Password'),
-                    ),
-                ),
-                'submit' => array(
-                    'title' => $this->l('Save'),
-                ),
-            ),
-        );
+        if ($response['error'] == 0) {
+            $responseData = json_decode($response['data'], true);
+            return $responseData;
+        }
+        return NULL;
     }
-
-    /**
-     * Set values for the inputs.
-     */
-    protected function getConfigFormValues()
+    private static function curl_installed()
     {
-        return array(
-            'HEALTHYINFOCHECKOUT_LIVE_MODE' => Configuration::get('HEALTHYINFOCHECKOUT_LIVE_MODE', true),
-            'HEALTHYINFOCHECKOUT_ACCOUNT_EMAIL' => Configuration::get('HEALTHYINFOCHECKOUT_ACCOUNT_EMAIL', 'contact@prestashop.com'),
-            'HEALTHYINFOCHECKOUT_ACCOUNT_PASSWORD' => Configuration::get('HEALTHYINFOCHECKOUT_ACCOUNT_PASSWORD', null),
-        );
+        return function_exists('curl_version');
     }
-
     /**
-     * Save form data.
+     * Load the configuration form
      */
-    protected function postProcess()
+    public function getContent()
     {
-        $form_values = $this->getConfigFormValues();
+        $this->_html = '<h2>' . $this->l("Health Info Check Out") . '</h2>';
 
-        foreach (array_keys($form_values) as $key) {
-            Configuration::updateValue($key, Tools::getValue($key));
+        if (!empty($_POST) and Tools::isSubmit('submitSave')) {
+            $this->_postValidation();
+            if (!sizeof($this->_postErrors)){
+                $this->authToken = NULL;
+                $this->_postProcess();
+            }
+            else {
+                foreach ($this->_postErrors as $err) {
+                    $this->_html .= $this->displayError($err);
+                }
+            }
+        }
+        $this->_displayForm();
+        return $this->_html;
+    }
+    private function _displayForm()
+    {
+        $this->_html .= '<fieldset>';
+        $alert = array();
+        if (!Configuration::get('client_id') || Configuration::get('client_id') == '') $alert['client_id'] = 1;
+        if (!Configuration::get('client_secret') || Configuration::get('client_secret') == '') $alert['client_secret'] = 1;
+        if (!count($alert)) $this->_html .= '<strong>' . $this->l("HealthyO est configuré") . '</strong>';
+        else {
+            $this->_html .=  $this->l("HealthyO n'est pas encore configuré, veuillez renseigner votre clé d'accès (client_id) et votre clé secrète (client_secret).") . '</strong>';
+            $this->_html .= '<h4>' . $this->l($this->messageService) . '</h4>';
+        }
+        $this->_html .= '</fieldset><div class="clear"> </div>
+            <style>
+                #tabList { clear: left; }
+                .tabItem { display: block; background: #FFFFF0; border: 1px solid #CCCCCC; padding: 10px; padding-top: 20px; }
+            </style>
+            <div id="tabList">
+                <div class="tabItem">
+                    <form action="index.php?tab=' . Tools::getValue('tab') . '&configure=' . Tools::getValue('configure') . '&token=' . Tools::getValue('token') . '&tab_module=' . Tools::getValue('tab_module') . '&module_name=' . Tools::getValue('module_name') . '&id_tab=1&section=general" method="post" class="form" id="configForm">
+                    <fieldset style="border: 0px;">
+                        <h4>' . $this->l('General configuration') . ' :</h4>
+
+                        <label>' . $this->l("HealthyO client_id") . ' : </label>
+                        <div class="margin-form"><input type="text" size="20" name="client_id" value="' . Tools::getValue('client_id', Configuration::get('client_id')) . '" /></div>
+                        <label>' . $this->l("HealthyO client_secret") . ' : </label>
+                        <div class="margin-form"><input type="text" size="20" name="client_secret" value="' . Tools::getValue('client_secret', Configuration::get('client_secret')) . '" /></div>
+                    </div>
+                    <br /><br />
+                </fieldset>
+                <div class="margin-form"><input class="button" name="submitSave" type="submit"></div>
+            </form>
+        </div></div>';
+    }
+    private function _postValidation()
+    {
+        // Check configuration values
+        $this->addLog('client_id=' . Tools::getValue('client_id'));
+        if (Tools::getValue('client_id') == '' || Tools::getValue('client_secret') == '') {
+            $this->_postErrors[] = $this->l($this->messageService);
+        }
+    }
+    private function _postProcess()
+    {
+        // Saving new configurations and Check authentication
+        if (Configuration::updateValue('client_id', Tools::getValue('client_id'))
+            && Configuration::updateValue('client_secret', Tools::getValue('client_secret'))
+            /*&& $this->login()*/){
+            $this->_html .= $this->displayConfirmation($this->l('La configuration est terminée'));
+        }
+        else {
+            $this->_html .= $this->displayError($this->l($this->authError));
         }
     }
 
-    /**
-    * Add the CSS & JavaScript files you want to be loaded in the BO.
-    */
-    public function hookDisplayBackOfficeHeader()
+    public function hookDisplayOrderConfirmation($params)
     {
-        if (Tools::getValue('configure') == $this->name) {
-            $this->context->controller->addJS($this->_path.'views/js/back.js');
-            $this->context->controller->addCSS($this->_path.'views/css/back.css');
+        //$this->login();
+        $this->header[] = "Authorization: Bearer " . $this->authToken;
+        $this->context->smarty->assign('my_custom_text', 'Thanks for checking out!');
+        return $this->display(__FILE__, 'views/templates/hook/order-confirmation.tpl');
+    }
+
+    // Do not removed until to publish add on store will stock as abstract class show log inner prestashop logger
+    public function addLog($message, $severity = 1, $errorCode = null, $objectType = null, $objectId = null, $allowDuplicate = true)
+    {
+        if (class_exists('PrestaShopLogger')) {
+            PrestaShopLogger::addLog($message, $severity, $errorCode, $objectType, $objectId, $allowDuplicate);
+        } else if (class_exists('Logger')) {
+            Logger::addLog($message, $severity, $errorCode, $objectType, $objectId, $allowDuplicate);
+        } else {
+            error_log($message . "(" . $errorCode . ")");
         }
     }
 
-    /**
-     * Add the CSS & JavaScript files you want to be added on the FO.
-     */
-    public function hookHeader()
+    const DEFAULT_LOG_FILE = 'dev2.log';
+    public static function log($message, $level = 'debug', $fileName = null)
     {
-        $this->context->controller->addJS($this->_path.'/views/js/front.js');
-        $this->context->controller->addCSS($this->_path.'/views/css/front.css');
-    }
+        $fileDir = _PS_ROOT_DIR_ . '/var/logs/';
 
-    public function hookActionObjectCustomerAddAfter()
-    {
-        /* Place your code here. */
-    }
+        if (!$fileName)
+            $fileName = self::DEFAULT_LOG_FILE;
 
-    public function hookDisplayAdminOrder()
-    {
-        /* Place your code here. */
-    }
+        if (is_array($message) || is_object($message)) {
+            $message = print_r($message, true);
+        }
 
-    public function hookDisplayFeatureForm()
-    {
-        /* Place your code here. */
-    }
+        $formatted_message = '*' . $level . '* ' . " -- " . date('Y/m/d - H:i:s') . ': ' . $message . "\r\n";
 
-    public function hookDisplayOrderConfirmation()
-    {
-        /* Place your code here. */
+        return file_put_contents($fileDir . $fileName, $formatted_message, FILE_APPEND);
     }
 }

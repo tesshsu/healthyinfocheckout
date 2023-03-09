@@ -82,12 +82,12 @@ class HealthyInfoCheckOut extends Module
 
         $this->header = ['Content-Type: application/json', 'Accept: application/json', 'User-Agent:' . $_SERVER['HTTP_USER_AGENT']];
 
-        $this->ps_versions_compliancy = array(
-            'min' => '1.6.1',
+        $this->ps_versions_compliancy = [
+            'min' => '8.0.0',
             'max' => _PS_VERSION_,
-        );
+        ];
 
-        $this->_hooks = array('header', 'displayCheckoutForm', 'displayOrderConfirmation', 'displayAdminOrder', 'actionOrderStatusPostUpdate', 'displayBeforeCarrier', 'actionOrderStatusUpdate', 'actionValidateOrder', 'actionPaymentConfirmation', 'actionValidateOrderAfter', 'displayFeatureForm');
+        $this->_hooks = array('header', 'displayPersonalInformationTop','displayCheckoutForm', 'displayOrderConfirmation', 'displayAdminOrder', 'actionOrderStatusPostUpdate', 'displayBeforeCarrier', 'actionOrderStatusUpdate', 'actionValidateOrder', 'actionPaymentConfirmation', 'actionValidateOrderAfter', 'displayFeatureForm');
         $this->BASE_ENDPOINT = 'https://dev-opzbl59r.auth0.com/';
         $this->LOGIN_ENDPOINT = $this->BASE_ENDPOINT . 'oauth/token';
         $this->messageService = "Si vous n'avez pas accès et clé secrète, veuillez contacter le service client";
@@ -152,17 +152,21 @@ class HealthyInfoCheckOut extends Module
         $audience = Configuration::get('audience');
         $grant_type = Configuration::get('client_credentials');
 
+        $this->log('login access audience :' . $audience, 'info');
         if ($this->authToken == NULL && $accessKey != "" && $secretKey != "") {
+            $this->log('enter auToken null $accessKey :' . $accessKey, 'info');
             $data['accessKey'] = $accessKey;
             $data['secretKey'] = $secretKey;
             $data['audience'] = $audience;
             $data['grant_type'] = $grant_type ;
-            $loginData = $this->getDataFromResponse($this->callApi("POST",$this->LOGIN_ENDPOINT, $this->header, json_encode($data)));
-            $loginAuth = $loginData['auth'];
+            $this->log('$accessKey enter :' . $data['accessKey'], 'info');
+            $loginData = $this->callApi("POST",$this->LOGIN_ENDPOINT, $this->header, json_encode($data));
+            $this->log('$loginData :' . $loginData, 'info');
 
             // Verify post return login as auth true
-            if ($loginData != NULL && $loginAuth) {
+            if ($accessKey && $secretKey) {
                 $this->authToken = $loginData['access_token'];
+                $this->log('$this->authToken :' . $this->authToken, 'info');
                 return true;
             }
         }
@@ -213,9 +217,11 @@ class HealthyInfoCheckOut extends Module
     private function getDataFromResponse($response)
     {
         if ($response['error'] == 0) {
+            $this->log('getDataFromResponse :' . $response, 'info');
             $responseData = json_decode($response['data'], true);
             return $responseData;
         }
+        $this->log('getDataFromResponse has error :' . printf($response), 'info');
         return NULL;
     }
     private static function curl_installed()
@@ -250,7 +256,7 @@ class HealthyInfoCheckOut extends Module
         $alert = array();
         if (!Configuration::get('client_id') || Configuration::get('client_id') == '') $alert['client_id'] = 1;
         if (!Configuration::get('client_secret') || Configuration::get('client_secret') == '') $alert['client_secret'] = 1;
-        if (!count($alert)) $this->_html .= '<strong>' . $this->l("HealthyO est configuré") . '</strong>';
+        if (!count($alert)) $this->_html .= '<strong>' . $this->l("HealthyO est configuré, vous pouvez desormais d'avoir information du client concerant sante sur command page onformations personnelles") . '</strong>';
         else {
             $this->_html .=  $this->l("HealthyO n'est pas encore configuré, veuillez renseigner votre clé d'accès (client_id) et votre clé secrète (client_secret).") . '</strong>';
             $this->_html .= '<h4>' . $this->l($this->messageService) . '</h4>';
@@ -290,7 +296,7 @@ class HealthyInfoCheckOut extends Module
         // Saving new configurations and Check authentication
         if (Configuration::updateValue('client_id', Tools::getValue('client_id'))
             && Configuration::updateValue('client_secret', Tools::getValue('client_secret'))
-            /*&& $this->login()*/){
+            && $this->login()){
             $this->_html .= $this->displayConfirmation($this->l('La configuration est terminée'));
         }
         else {
@@ -298,12 +304,11 @@ class HealthyInfoCheckOut extends Module
         }
     }
 
-    public function hookDisplayOrderConfirmation($params)
+    public function hookDisplayPersonalInformationTop($params)
     {
-        //$this->login();
-        $this->header[] = "Authorization: Bearer " . $this->authToken;
-        $this->context->smarty->assign('my_custom_text', 'Thanks for checking out!');
-        return $this->display(__FILE__, 'views/templates/hook/order-confirmation.tpl');
+        $this->_html .=  $this->l("HealthyO nTess.") . '</strong>';
+
+        return $this->display(__FILE__, 'views/templates/front/checkout/_partials/personal-information.tpl');
     }
 
     // Do not removed until to publish add on store will stock as abstract class show log inner prestashop logger

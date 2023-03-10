@@ -69,6 +69,7 @@ class HealthyInfoCheckOutActionsModuleFrontController extends ModuleFrontControl
             $customer->note .= "client dispose d'une ordonnance médicale";
         }
 
+        // Keep log if still in development
         $this->log('$customer->note :' . $customer->note, 'info');
         $customer->update();
     }

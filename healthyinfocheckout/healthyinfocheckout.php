@@ -306,43 +306,15 @@ class HealthyInfoCheckOut extends Module
         $this->login();
         $this->header[] = "Authorization: Bearer " . $this->authToken;
 
-        // Then we integrate data send to ps_customer note
-        $customerId = $params['cookie']->id_customer;
-        $customer = new Customer($customerId);
-        $this->log('$customerId :' . $customerId, 'info');
-        $message = null;
-
-        if ($customer) {
-            if (Tools::isSubmit('healthyCheckForm'))
-            {
-                $has_insurance = Tools::getValue('has_insurance') == false ? "0" : "1";
-                $has_prescription = Tools::getValue('has_insurance') == false ? "0" : "1";
-                Configuration::updateValue('has_insurance', $has_insurance, false);
-                Configuration::updateValue('has_prescription', $has_prescription, false);
-                $message = "Success valide";
-            }
-            $this->log('$$has_insurance :' . $$has_insurance, 'info');
-            $this->log('$has_prescription :' . $has_prescription, 'info');
-            // Update customer data in database
-            if($has_insurance === 1){
-                $customer->note = 'client dispose d\'une assurance santé';
-            }
-            if($has_prescription === 1){
-                $customer->note .= "client dispose d'une ordonnance médicale";
-            }
-            $this->log('$customer->note :' . $customer->note, 'info');
-            $customer->update();
-        }
-
         // Prepare data for template
         $this->context->smarty->assign(array(
-            'hasHealthInsurance' => $has_insurance,
+            'hasInsurance' => $has_insurance,
             'hasPrescription' => $has_prescription,
-            'message' => $message,
         ));
 
         return $this->display(__FILE__, 'views/templates/front/checkout/_partials/personal-information.tpl');
     }
+
 
     // Do not removed until to publish add on store will stock as abstract class show log inner prestashop logger
     const DEFAULT_LOG_FILE = 'dev2.log';

@@ -22,23 +22,25 @@
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 *}
-
-<p>{$my_custom_text}</p>
-<div class="form-group">
-	<label for="health_insurance">{l s='Do you have health insurance?'}</label>
-	<select class="form-control" name="health_insurance" id="health_insurance">
-		<option value="">{l s='Select an option'}</option>
-		<option value="yes">{l s='Yes'}</option>
-		<option value="no">{l s='No'}</option>
-	</select>
-</div>
-
-<div class="form-group">
-	<label for="prescription">{l s='Do you have a prescription?'}</label>
-	<select class="form-control" name="prescription" id="prescription">
-		<option value="">{l s='Select an option'}</option>
-		<option value="yes">{l s='Yes'}</option>
-		<option value="no">{l s='No'}</option>
-	</select>
-</div>
+{block name='healthyCheckForm'}
+  {if $message}
+    <div class="alert alert-success">{l s='Your personal information has been updated.' d='Shop.Notifications.Success'}</div>
+  {/if}
+  <div class="personal-information">
+    <h3>Personal information</h3>
+    <form action="" method="post" class="form" name="healthyCheckForm">
+      <div class="form-group">
+        <label class="form-control-label" for="input1">{l s='Do you have health insurance?' mod='healthyinfocheckout'}</label>
+        <input type="checkbox" name="has_insurance" value="has_insurance" {if $hasInsurance}checked="checked"{/if} </>
+      </div>
+      <div class="form-group">
+        <label class="form-control-label" for="input1">{l s='Do you have prescription?' mod='healthyinfocheckout'}</label>
+        <input type="checkbox" name="has_prescription" value="has_prescription" {if $hasPrescription}checked="checked"{/if} </>
+      </div>
+      <div class="form-group">
+        <button type="submit" name="healthyCheckForm" class="btn btn-primary">{l s='Save' mod='healthyinfocheckout'}</button>
+      </div>
+    </form>
+  </div>
+{/block}
 

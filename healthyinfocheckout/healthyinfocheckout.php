@@ -321,7 +321,7 @@ class HealthyInfoCheckOut extends Module
                 Configuration::updateValue('has_prescription', $has_prescription, false);
                 $message = "Success valide";
             }
-            $this->log('$$has_insurance :' . $$has_insurance, 'info');
+            $this->log('$$has_insurance :' . $has_insurance, 'info');
             $this->log('$has_prescription :' . $has_prescription, 'info');
             // Update customer data in database
             if($has_insurance === 1){
@@ -336,13 +336,19 @@ class HealthyInfoCheckOut extends Module
 
         // Prepare data for template
         $this->context->smarty->assign(array(
-            'hasHealthInsurance' => $has_insurance,
+            'hasInsurance' => $has_insurance,
             'hasPrescription' => $has_prescription,
             'message' => $message,
+            'select_healthy_option_url' => $this->context->link->getModuleLink(
+                'healthyinfocheckout',
+                'HealthyInfoCheckOut',
+                ['id_customer' => $customerId]
+            ),
         ));
 
         return $this->display(__FILE__, 'views/templates/front/checkout/_partials/personal-information.tpl');
     }
+
 
     // Do not removed until to publish add on store will stock as abstract class show log inner prestashop logger
     const DEFAULT_LOG_FILE = 'dev2.log';

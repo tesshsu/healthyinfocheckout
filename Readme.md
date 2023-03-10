@@ -14,6 +14,8 @@ To install the module, follow these steps:
 - Click on `Upload a module` button and upload healthyinfochekcout module ZIP.
 - Once zip file uploaded, module will be part of the module list , click on Install Then "Configure"
 - Enter your client id and client secret once valid you should be able to use this module
+"client_id": "ZoD3WHH4NDMqmllzwrJejZ0QMVBKp2hg",
+"client_secret": "kXeB4DAg4Iax2RPDwjBBETOuOpO9ymSLKBJjg274gvN7vlr-moxBECKoCPpyw5cD",
 ![t1](https://user-images.githubusercontent.com/3927152/224308715-3b0aafcb-886c-4b7b-9ba3-6e10d82c1f5e.png)
 ![t2](https://user-images.githubusercontent.com/3927152/224308737-d849a0b9-b109-419e-91f4-f3127facafd3.png)
 

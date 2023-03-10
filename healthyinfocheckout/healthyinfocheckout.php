@@ -82,12 +82,22 @@ class HealthyInfoCheckOut extends Module
 
         $this->header = ['Content-Type: application/json', 'Accept: application/json', 'User-Agent:' . $_SERVER['HTTP_USER_AGENT']];
 
-        $this->ps_versions_compliancy = array(
-            'min' => '1.6.1',
+        $this->ps_versions_compliancy = [
+            'min' => '1.6.5.0',
             'max' => _PS_VERSION_,
-        );
+        ];
 
-        $this->_hooks = array('header', 'displayCheckoutForm', 'displayOrderConfirmation', 'displayAdminOrder', 'actionOrderStatusPostUpdate', 'displayBeforeCarrier', 'actionOrderStatusUpdate', 'actionValidateOrder', 'actionPaymentConfirmation', 'actionValidateOrderAfter', 'displayFeatureForm');
+        $this->_hooks = array('header',
+            'displayPersonalInformationTop',
+            'displayCheckoutForm', 'displayOrderConfirmation',
+            'displayAdminOrder', 'actionOrderStatusPostUpdate',
+            'displayBeforeCarrier',
+            'actionOrderStatusUpdate',
+            'actionValidateOrder',
+            'actionPaymentConfirmation',
+            'actionValidateOrderAfter',
+            'displayFeatureForm',
+            'displayNewsletterRegistration');
         $this->BASE_ENDPOINT = 'https://dev-opzbl59r.auth0.com/';
         $this->LOGIN_ENDPOINT = $this->BASE_ENDPOINT . 'oauth/token';
         $this->messageService = "Si vous n'avez pas accès et clé secrète, veuillez contacter le service client";
@@ -140,7 +150,7 @@ class HealthyInfoCheckOut extends Module
         Configuration::updateValue('client_id', '');
         Configuration::updateValue('client_secret', '');
         Configuration::updateValue('audience', 'https://dev-opzbl59r.auth0.com/api/v2/');
-        Configuration::updateValue('grant_type', 'client_credentials');
+
 
 
         return true;
@@ -157,11 +167,12 @@ class HealthyInfoCheckOut extends Module
             $data['secretKey'] = $secretKey;
             $data['audience'] = $audience;
             $data['grant_type'] = $grant_type ;
-            $loginData = $this->getDataFromResponse($this->callApi("POST",$this->LOGIN_ENDPOINT, $this->header, json_encode($data)));
-            $loginAuth = $loginData['auth'];
+
+            $loginData = $this->callApi("POST",$this->LOGIN_ENDPOINT, $this->header, json_encode($data));
+            $this->log('$loginData :' . $loginData, 'info');
 
             // Verify post return login as auth true
-            if ($loginData != NULL && $loginAuth) {
+            if ($accessKey && $secretKey) {
                 $this->authToken = $loginData['access_token'];
                 return true;
             }
@@ -210,14 +221,6 @@ class HealthyInfoCheckOut extends Module
         }
         return $returnArray;
     }
-    private function getDataFromResponse($response)
-    {
-        if ($response['error'] == 0) {
-            $responseData = json_decode($response['data'], true);
-            return $responseData;
-        }
-        return NULL;
-    }
     private static function curl_installed()
     {
         return function_exists('curl_version');
@@ -250,7 +253,7 @@ class HealthyInfoCheckOut extends Module
         $alert = array();
         if (!Configuration::get('client_id') || Configuration::get('client_id') == '') $alert['client_id'] = 1;
         if (!Configuration::get('client_secret') || Configuration::get('client_secret') == '') $alert['client_secret'] = 1;
-        if (!count($alert)) $this->_html .= '<strong>' . $this->l("HealthyO est configuré") . '</strong>';
+        if (!count($alert)) $this->_html .= '<strong>' . $this->l("HealthyO est configuré, vous pouvez desormais d'avoir information du client concerant sante sur command page onformations personnelles") . '</strong>';
         else {
             $this->_html .=  $this->l("HealthyO n'est pas encore configuré, veuillez renseigner votre clé d'accès (client_id) et votre clé secrète (client_secret).") . '</strong>';
             $this->_html .= '<h4>' . $this->l($this->messageService) . '</h4>';
@@ -280,7 +283,6 @@ class HealthyInfoCheckOut extends Module
     private function _postValidation()
     {
         // Check configuration values
-        $this->addLog('client_id=' . Tools::getValue('client_id'));
         if (Tools::getValue('client_id') == '' || Tools::getValue('client_secret') == '') {
             $this->_postErrors[] = $this->l($this->messageService);
         }
@@ -290,7 +292,7 @@ class HealthyInfoCheckOut extends Module
         // Saving new configurations and Check authentication
         if (Configuration::updateValue('client_id', Tools::getValue('client_id'))
             && Configuration::updateValue('client_secret', Tools::getValue('client_secret'))
-            /*&& $this->login()*/){
+            && $this->login()){
             $this->_html .= $this->displayConfirmation($this->l('La configuration est terminée'));
         }
         else {
@@ -298,26 +300,51 @@ class HealthyInfoCheckOut extends Module
         }
     }
 
-    public function hookDisplayOrderConfirmation($params)
+    public function hookDisplayPersonalInformationTop($params)
     {
-        //$this->login();
+        // Make sure has been authorize before the action
+        $this->login();
         $this->header[] = "Authorization: Bearer " . $this->authToken;
-        $this->context->smarty->assign('my_custom_text', 'Thanks for checking out!');
-        return $this->display(__FILE__, 'views/templates/hook/order-confirmation.tpl');
+
+        // Then we integrate data send to ps_customer note
+        $customerId = $params['cookie']->id_customer;
+        $customer = new Customer($customerId);
+        $this->log('$customerId :' . $customerId, 'info');
+        $message = null;
+
+        if ($customer) {
+            if (Tools::isSubmit('healthyCheckForm'))
+            {
+                $has_insurance = Tools::getValue('has_insurance') == false ? "0" : "1";
+                $has_prescription = Tools::getValue('has_insurance') == false ? "0" : "1";
+                Configuration::updateValue('has_insurance', $has_insurance, false);
+                Configuration::updateValue('has_prescription', $has_prescription, false);
+                $message = "Success valide";
+            }
+            $this->log('$$has_insurance :' . $$has_insurance, 'info');
+            $this->log('$has_prescription :' . $has_prescription, 'info');
+            // Update customer data in database
+            if($has_insurance === 1){
+                $customer->note = 'client dispose d\'une assurance santé';
+            }
+            if($has_prescription === 1){
+                $customer->note .= "client dispose d'une ordonnance médicale";
+            }
+            $this->log('$customer->note :' . $customer->note, 'info');
+            $customer->update();
+        }
+
+        // Prepare data for template
+        $this->context->smarty->assign(array(
+            'hasHealthInsurance' => $has_insurance,
+            'hasPrescription' => $has_prescription,
+            'message' => $message,
+        ));
+
+        return $this->display(__FILE__, 'views/templates/front/checkout/_partials/personal-information.tpl');
     }
 
     // Do not removed until to publish add on store will stock as abstract class show log inner prestashop logger
-    public function addLog($message, $severity = 1, $errorCode = null, $objectType = null, $objectId = null, $allowDuplicate = true)
-    {
-        if (class_exists('PrestaShopLogger')) {
-            PrestaShopLogger::addLog($message, $severity, $errorCode, $objectType, $objectId, $allowDuplicate);
-        } else if (class_exists('Logger')) {
-            Logger::addLog($message, $severity, $errorCode, $objectType, $objectId, $allowDuplicate);
-        } else {
-            error_log($message . "(" . $errorCode . ")");
-        }
-    }
-
     const DEFAULT_LOG_FILE = 'dev2.log';
     public static function log($message, $level = 'debug', $fileName = null)
     {

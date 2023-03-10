@@ -53,10 +53,24 @@ class HealthyInfoCheckOutActionsModuleFrontController extends ModuleFrontControl
      */
     public function processSelect()
     {
-        $has_insurance= Tools::getValue('has_insurance');
+        $has_insurance = Tools::getValue('has_insurance') == false ? false : true;
+        $has_prescription = Tools::getValue('has_prescription') == false ? false : true;
 
-        $this->log('processSelect :' . $has_insurance, 'info');
-        // TODO
+        $context = Context::getContext();
+        $customerId = $context->customer->id;
+        $customer = new Customer($customerId);
+
+        // Update customer data in database
+        $customer->note = '';
+        if($has_insurance){
+            $customer->note = 'client dispose d\'une assurance santé';
+        }
+        if($has_prescription){
+            $customer->note .= "client dispose d'une ordonnance médicale";
+        }
+
+        $this->log('$customer->note :' . $customer->note, 'info');
+        $customer->update();
     }
 
 

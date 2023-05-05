@@ -28,8 +28,6 @@
   {/if}
   <div class="personal-information">
     <h3>Personal information</h3>
-    <!--form action="" method="post" class="form" name="healthyCheckForm"-->
-
       <form
               class="clearfix"
               id="js-delivery"
@@ -49,9 +47,6 @@
         <label class="form-control-label" for="input1">{l s='Do you have prescription?' mod='healthyinfocheckout'}</label>
         <input type="checkbox" name="has_prescription" value="has_prescription" {if $hasPrescription}checked="checked"{/if} </>
       </div>
-      <!--div class="form-group">
-        <button type="submit" name="healthyCheckForm" class="btn btn-primary">{l s='Save' mod='healthyinfocheckout'}</button>
-      </div-->
     </form>
   </div>
 {/block}

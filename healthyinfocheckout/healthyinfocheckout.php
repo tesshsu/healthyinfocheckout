@@ -37,6 +37,12 @@ class HealthyInfoCheckOut extends Module
 
     const PREFIX = 'ps_';
 
+    /** @var string */
+    const CLIENT_ID = 'client_id';
+
+    /** @var string */
+    const CLIENT_SECRET = 'cleint_secret';
+
     /** @var string $_html */
     private $_html = '';
 
@@ -244,41 +250,70 @@ class HealthyInfoCheckOut extends Module
                 }
             }
         }
-        $this->_displayForm();
+        $this->displayForm();
         return $this->_html;
     }
-    private function _displayForm()
+    private function displayForm()
     {
-        $this->_html .= '<fieldset>';
-        $alert = array();
-        if (!Configuration::get('client_id') || Configuration::get('client_id') == '') $alert['client_id'] = 1;
-        if (!Configuration::get('client_secret') || Configuration::get('client_secret') == '') $alert['client_secret'] = 1;
-        if (!count($alert)) $this->_html .= '<strong>' . $this->l("HealthyO est configuré, vous pouvez desormais d'avoir information du client concerant sante sur command page onformations personnelles") . '</strong>';
-        else {
-            $this->_html .=  $this->l("HealthyO n'est pas encore configuré, veuillez renseigner votre clé d'accès (client_id) et votre clé secrète (client_secret).") . '</strong>';
-            $this->_html .= '<h4>' . $this->l($this->messageService) . '</h4>';
-        }
-        $this->_html .= '</fieldset><div class="clear"> </div>
-            <style>
-                #tabList { clear: left; }
-                .tabItem { display: block; background: #FFFFF0; border: 1px solid #CCCCCC; padding: 10px; padding-top: 20px; }
-            </style>
-            <div id="tabList">
-                <div class="tabItem">
-                    <form action="index.php?tab=' . Tools::getValue('tab') . '&configure=' . Tools::getValue('configure') . '&token=' . Tools::getValue('token') . '&tab_module=' . Tools::getValue('tab_module') . '&module_name=' . Tools::getValue('module_name') . '&id_tab=1&section=general" method="post" class="form" id="configForm">
-                    <fieldset style="border: 0px;">
-                        <h4>' . $this->l('General configuration') . ' :</h4>
+        $fieldsValue = [
+            self::CLIENT_ID => Tools::getValue(
+                self::CLIENT_ID ,
+                Configuration::get(self::CLIENT_ID )
+            ),
+            self::CLIENT_SECRET => Tools::getValue(
+                self::CLIENT_SECRET,
+                Configuration::get(self::CLIENT_SECRET)
+            ),
+        ];
+        // Init Fields form array
+        $form = [
+            'form' => [
+                'legend' => [
+                    'title' => $this->l('Settings'),
+                ],
+                'input' => [
+                    [
+                        'type' => 'text',
+                        'label' => $this->l('client id'),
+                        'name' => self::CLIENT_ID,
+                        'size' => 100,
+                        'required' => true,
+                    ],
+                    [
+                        'type' => 'text',
+                        'label' => $this->l('client secret'),
+                        'name' => self::CLIENT_SECRET,
+                        'size' => 100,
+                        'required' => true,
+                    ],
+                ],
+                'submit' => [
+                    'title' => $this->l('Save'),
+                    'class' => 'btn btn-default pull-right',
+                ],
+            ],
+        ];
 
-                        <label>' . $this->l("HealthyO client_id") . ' : </label>
-                        <div class="margin-form"><input type="text" size="20" name="client_id" value="' . Tools::getValue('client_id', Configuration::get('client_id')) . '" /></div>
-                        <label>' . $this->l("HealthyO client_secret") . ' : </label>
-                        <div class="margin-form"><input type="text" size="20" name="client_secret" value="' . Tools::getValue('client_secret', Configuration::get('client_secret')) . '" /></div>
-                    </div>
-                    <br /><br />
-                </fieldset>
-                <div class="margin-form"><input class="button" name="submitSave" type="submit"></div>
-            </form>
-        </div></div>';
+        $helper = new HelperForm();
+        $helper->show_toolbar = false;
+        $helper->table = $this->table;
+        $lang = new Language((int)Configuration::get('PS_LANG_DEFAULT'));
+        $helper->default_form_language = $lang->id;
+        $helper->allow_employee_form_lang = Configuration::get('PS_BO_ALLOW_EMPLOYEE_FORM_LANG') ? Configuration::get('PS_BO_ALLOW_EMPLOYEE_FORM_LANG') : 0;
+        $this->fields_form = [];
+        $helper->identifier = $this->identifier;
+        $helper->submit_action = 'submitSave';
+        $helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false)
+            . '&configure=' . $this->name
+            . '&tab_module=' . $this->tab
+            . '&module_name=' . $this->name;
+        $helper->token = Tools::getAdminTokenLite('AdminModules');
+        $helper->tpl_vars = [
+            'fields_value' => $fieldsValue,
+            'languages' => $this->context->controller->getLanguages(),
+            'id_language' => $this->context->language->id,
+        ];
+        $this->_html .= $helper->generateForm([$form]);
     }
     private function _postValidation()
     {
@@ -306,10 +341,44 @@ class HealthyInfoCheckOut extends Module
         $this->login();
         $this->header[] = "Authorization: Bearer " . $this->authToken;
 
+        // Then we integrate data send to ps_customer note
+        $customerId = $params['cookie']->id_customer;
+        $customer = new Customer($customerId);
+        $this->log('$customerId :' . $customerId, 'info');
+        $message = null;
+
+        if ($customer) {
+            if (Tools::isSubmit('healthyCheckForm'))
+            {
+                $has_insurance = Tools::getValue('has_insurance') == false ? "0" : "1";
+                $has_prescription = Tools::getValue('has_insurance') == false ? "0" : "1";
+                Configuration::updateValue('has_insurance', $has_insurance, false);
+                Configuration::updateValue('has_prescription', $has_prescription, false);
+                $message = "Success valide";
+            }
+            $this->log('$$has_insurance :' . $has_insurance, 'info');
+            $this->log('$has_prescription :' . $has_prescription, 'info');
+            // Update customer data in database
+            if($has_insurance === 1){
+                $customer->note = 'client dispose d\'une assurance santé';
+            }
+            if($has_prescription === 1){
+                $customer->note .= "client dispose d'une ordonnance médicale";
+            }
+            $this->log('$customer->note :' . $customer->note, 'info');
+            $customer->update();
+        }
+
         // Prepare data for template
         $this->context->smarty->assign(array(
             'hasInsurance' => $has_insurance,
             'hasPrescription' => $has_prescription,
+            'message' => $message,
+            'select_healthy_option_url' => $this->context->link->getModuleLink(
+                'healthyinfocheckout',
+                'HealthyInfoCheckOut',
+                ['id_customer' => $customerId]
+            ),
         ));
 
         return $this->display(__FILE__, 'views/templates/front/checkout/_partials/personal-information.tpl');

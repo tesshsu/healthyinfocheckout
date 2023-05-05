@@ -49,7 +49,7 @@ class HealthyInfoCheckOutActionsModuleFrontController extends ModuleFrontControl
     }
 
     /**
-     * Add a favorite product.
+     * Update customer data
      */
     public function processSelect()
     {

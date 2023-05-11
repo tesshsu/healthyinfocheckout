@@ -31,7 +31,9 @@ if (!defined('_PS_VERSION_')) {
 /**
  * Class HealthyInfoCheckOut
  */
-class HealthyInfoCheckOut extends Module
+use PrestaShop\PrestaShop\Core\Module\WidgetInterface;
+
+class HealthyInfoCheckOut extends Module implements WidgetInterface
 {
     protected $config_form = false;
 
@@ -41,7 +43,7 @@ class HealthyInfoCheckOut extends Module
     const CLIENT_ID = 'client_id';
 
     /** @var string */
-    const CLIENT_SECRET = 'cleint_secret';
+    const CLIENT_SECRET = 'client_secret';
 
     /** @var string $_html */
     private $_html = '';
@@ -58,9 +60,6 @@ class HealthyInfoCheckOut extends Module
     /** @var string $LOGIN_ENDPOINT */
     protected $LOGIN_ENDPOINT;
 
-    /** @var array $_hooks */
-    private $_hooks;
-
     /** @var string $authToken */
     protected $authToken = NULL;
 
@@ -69,6 +68,7 @@ class HealthyInfoCheckOut extends Module
 
     /** @var string $authError */
     private $authError;
+    private $templateFile;
 
     public function __construct()
     {
@@ -92,22 +92,11 @@ class HealthyInfoCheckOut extends Module
             'min' => '1.6.5.0',
             'max' => _PS_VERSION_,
         ];
-
-        $this->_hooks = array('header',
-            'displayPersonalInformationTop',
-            'displayCheckoutForm', 'displayOrderConfirmation',
-            'displayAdminOrder', 'actionOrderStatusPostUpdate',
-            'displayBeforeCarrier',
-            'actionOrderStatusUpdate',
-            'actionValidateOrder',
-            'actionPaymentConfirmation',
-            'actionValidateOrderAfter',
-            'displayFeatureForm',
-            'displayNewsletterRegistration');
         $this->BASE_ENDPOINT = 'https://dev-opzbl59r.auth0.com/';
         $this->LOGIN_ENDPOINT = $this->BASE_ENDPOINT . 'oauth/token';
         $this->messageService = "Si vous n'avez pas accès et clé secrète, veuillez contacter le service client";
         $this->authError = 'Veuillez vérifier vos clés d\'identification';
+        $this->templateFile = 'module:healthyinfocheckout/views/templates/hook/healthyinfocheckout.tpl';
     }
 
     /**
@@ -121,30 +110,29 @@ class HealthyInfoCheckOut extends Module
             return false;
         }
 
-        if (parent::install()) {
-            foreach ($this->_hooks as $hook) {
-                if (!$this->registerHook($hook)) {
-                    return FALSE;
-                }
-            }
+        if (parent::install() && $this->registerHook('displayPersonalInformationTop')) {
             // If install set setting configuration
+            $this->log('Install', 'info');
             $this->setConfigurationValues();
-
+            // If install create new table in database
+            $this->createTable();
             return TRUE;
         }
+
         return FALSE;
     }
 
     public function uninstall()
     {
         if (parent::uninstall()) {
-            foreach ($this->_hooks as $hook) {
-                if (!$this->unregisterHook($hook)) {
+                if (!$this->unregisterHook('displayPersonalInformationTop')) {
                     return FALSE;
                 }
-            }
             return TRUE;
         }
+        // If uninstall delete table
+        $this->deleteTable();
+        $this->log('Uninstall', 'info');
         return FALSE;
     }
     /**
@@ -156,30 +144,29 @@ class HealthyInfoCheckOut extends Module
         Configuration::updateValue('client_id', '');
         Configuration::updateValue('client_secret', '');
         Configuration::updateValue('audience', 'https://dev-opzbl59r.auth0.com/api/v2/');
-
-
-
+        Configuration::updateValue('grant_type', 'client_credentials');
         return true;
     }
     public function login()
     {
         $accessKey = Configuration::get('client_id');
         $secretKey = Configuration::get('client_secret');
-        $audience = Configuration::get('audience');
-        $grant_type = Configuration::get('client_credentials');
+        $audience = 'https://dev-opzbl59r.auth0.com/api/v2/';
+        $grant_type = 'client_credentials';
 
         if ($this->authToken == NULL && $accessKey != "" && $secretKey != "") {
-            $data['accessKey'] = $accessKey;
-            $data['secretKey'] = $secretKey;
+            $data['client_id'] = $accessKey;
+            $data['client_secret'] = $secretKey;
             $data['audience'] = $audience;
             $data['grant_type'] = $grant_type ;
-
-            $loginData = $this->callApi("POST",$this->LOGIN_ENDPOINT, $this->header, json_encode($data));
-            $this->log('$loginData :' . $loginData, 'info');
+            $this->log('$data :' . json_encode($data), 'info');
+            $loginData = $this->callApi("POST", $this->LOGIN_ENDPOINT, $this->header, json_encode($data));
+            $response = json_decode($loginData['data'], true); // decode the JSON string
+            $this->log('$loginData :' . json_encode($loginData), 'info');
 
             // Verify post return login as auth true
-            if ($accessKey && $secretKey) {
-                $this->authToken = $loginData['access_token'];
+            if ($accessKey && $secretKey && $response['access_token']) {
+                $this->log('Pass auth0', 'info');
                 return true;
             }
         }
@@ -237,10 +224,11 @@ class HealthyInfoCheckOut extends Module
     public function getContent()
     {
         $this->_html = '<h2>' . $this->l("Health Info Check Out") . '</h2>';
-
+        $this->displayForm();
         if (!empty($_POST) and Tools::isSubmit('submitSave')) {
             $this->_postValidation();
             if (!sizeof($this->_postErrors)){
+                $this->log('Post validation submit', 'info');
                 $this->authToken = NULL;
                 $this->_postProcess();
             }
@@ -250,7 +238,6 @@ class HealthyInfoCheckOut extends Module
                 }
             }
         }
-        $this->displayForm();
         return $this->_html;
     }
     private function displayForm()
@@ -318,6 +305,11 @@ class HealthyInfoCheckOut extends Module
     private function _postValidation()
     {
         // Check configuration values
+        $client_id = Tools::getValue('client_id');
+        $client_secret = Tools::getValue('client_secret');
+        $this->log($client_id, 'info');
+        $this->log($client_secret, 'info');
+
         if (Tools::getValue('client_id') == '' || Tools::getValue('client_secret') == '') {
             $this->_postErrors[] = $this->l($this->messageService);
         }
@@ -325,9 +317,8 @@ class HealthyInfoCheckOut extends Module
     private function _postProcess()
     {
         // Saving new configurations and Check authentication
-        if (Configuration::updateValue('client_id', Tools::getValue('client_id'))
-            && Configuration::updateValue('client_secret', Tools::getValue('client_secret'))
-            && $this->login()){
+        if (Configuration::updateValue(self::CLIENT_ID, Tools::getValue(self::CLIENT_ID))
+            && Configuration::updateValue(self::CLIENT_SECRET, Tools::getValue(self::CLIENT_SECRET)) && $this->login()) {
             $this->_html .= $this->displayConfirmation($this->l('La configuration est terminée'));
         }
         else {
@@ -335,11 +326,25 @@ class HealthyInfoCheckOut extends Module
         }
     }
 
+    public function renderWidget($hookName, array $configuration)
+    {
+        if (!$this->isCached($this->templateFile, $this->getCacheId('healthyinfocheckout'))) {
+            $this->smarty->assign($this->getWidgetVariables($hookName, $configuration));
+        }
+        return $this->fetch('module:'.$this->name.'/views/templates/hook/healthyinfocheckout.tpl');
+    }
+
+    public function getWidgetVariables($hookName, array $configuration)
+    {
+        return [
+            'message' => 'Hello world',
+        ];
+    }
+
     public function hookDisplayPersonalInformationTop($params)
     {
         // Make sure has been authorize before the action
         $this->login();
-        $this->header[] = "Authorization: Bearer " . $this->authToken;
 
         // Then we integrate data send to ps_customer note
         $customerId = $params['cookie']->id_customer;
@@ -384,7 +389,6 @@ class HealthyInfoCheckOut extends Module
         return $this->display(__FILE__, 'views/templates/front/checkout/_partials/personal-information.tpl');
     }
 
-
     // Do not removed until to publish add on store will stock as abstract class show log inner prestashop logger
     const DEFAULT_LOG_FILE = 'dev2.log';
     public static function log($message, $level = 'debug', $fileName = null)
@@ -401,5 +405,25 @@ class HealthyInfoCheckOut extends Module
         $formatted_message = '*' . $level . '* ' . " -- " . date('Y/m/d - H:i:s') . ': ' . $message . "\r\n";
 
         return file_put_contents($fileDir . $fileName, $formatted_message, FILE_APPEND);
+    }
+
+    private function createTable()
+    {
+        $sql = "CREATE TABLE IF NOT EXISTS `" . _DB_PREFIX_ . "healthy_info_checkout` (
+            `id_healthy_info_checkout` int(11) unsigned NOT NULL AUTO_INCREMENT,
+            `id_customer` int(10) unsigned NOT NULL,
+            `has_insurance` BOOLEAN NOT NULL DEFAULT 0,
+            `has_prescription` BOOLEAN NOT NULL DEFAULT 0,
+            `extra_note` TEXT NULL,
+            `created_at` datetime NOT NULL,
+            PRIMARY KEY (`id_healthy_info_checkout`)
+        ) ENGINE=" . _MYSQL_ENGINE_ . " DEFAULT CHARSET=utf8;";
+        return Db::getInstance()->execute($sql);
+    }
+
+    private function deleteTable()
+    {
+        $sql = "DROP TABLE IF EXISTS `" . _DB_PREFIX_ . "healthy_info_checkout`";
+        return Db::getInstance()->execute($sql);
     }
 }

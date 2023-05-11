@@ -1,0 +1,12 @@
+admin_healthy_question_demo:
+  path: healthyQuestion/demo
+  methods: [GET]
+  defaults:
+    _controller: PrestaShop\Module\HealthyInfoCheckOut\Controller\HealthyQuestionController::demoAction
+    _legacy_controller: false
+    _syilex: false
+    _validate: false
+    _admin: true
+    _is_module_controller: true
+    _legacy_link: false
+    _legacy_link_only: false

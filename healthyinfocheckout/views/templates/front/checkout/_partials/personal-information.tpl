@@ -30,7 +30,7 @@
     <h3>Personal information</h3>
       <form
               class="clearfix"
-              id="js-delivery"
+              id="healthy-checkout-form"
               data-url-update="{url entity='module' name='healthyinfocheckout' controller='actions'
                   params=[
                   'process' => 'select'

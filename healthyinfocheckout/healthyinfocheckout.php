@@ -70,6 +70,7 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
     private $authError;
     private $templateFile;
 
+
     public function __construct()
     {
         $this->name = 'healthyinfocheckout';
@@ -105,21 +106,10 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
      */
     public function install()
     {
-        if (extension_loaded('curl') == false) {
-            $this->_errors[] = $this->l('You have to enable the cURL extension on your server to install this module');
-            return false;
-        }
-
-        if (parent::install() && $this->registerHook('displayPersonalInformationTop')) {
-            // If install set setting configuration
-            $this->log('Install', 'info');
-            $this->setConfigurationValues();
-            // If install create new table in database
-            $this->createTable();
-            return TRUE;
-        }
-
-        return FALSE;
+        $this->log('Uninstall', 'info');
+        return parent::install()
+            && (bool) $this->registerHook('displayPersonalInformationTop')
+            && $this->createTable();
     }
 
     public function uninstall()
@@ -349,28 +339,27 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
         // Then we integrate data send to ps_customer note
         $customerId = $params['cookie']->id_customer;
         $customer = new Customer($customerId);
-        $this->log('$customerId :' . $customerId, 'info');
         $message = null;
+        // By default has no insurance and prescription
+        $has_insurance = 0;
+        $has_prescription = 0;
+        $text_has_insurance = 'client dispose d\'une assurance santé';
+        $text_has_prescription = 'client dispose d\'une ordonnance médicale';
 
         if ($customer) {
-            if (Tools::isSubmit('healthyCheckForm'))
-            {
-                $has_insurance = Tools::getValue('has_insurance') == false ? "0" : "1";
-                $has_prescription = Tools::getValue('has_insurance') == false ? "0" : "1";
-                Configuration::updateValue('has_insurance', $has_insurance, false);
-                Configuration::updateValue('has_prescription', $has_prescription, false);
-                $message = "Success valide";
-            }
-            $this->log('$$has_insurance :' . $has_insurance, 'info');
-            $this->log('$has_prescription :' . $has_prescription, 'info');
+            $this->log('enter condition********', 'info');
+            $has_insurance = Tools::getValue('has_insurance');
+            $has_prescription = Tools::getValue('has_prescription');
+            $this->log($has_insurance, 'info');
             // Update customer data in database
-            if($has_insurance === 1){
-                $customer->note = 'client dispose d\'une assurance santé';
+            if($has_insurance === 1 && $has_prescription === 1){
+                $customer->note = $text_has_insurance . ' et aussi ' . $text_has_prescription;
+            } elseif ($has_insurance === 1) {
+                $customer->note = $text_has_insurance;
+            } elseif ($has_prescription === 1) {
+                $customer->note = $text_has_prescription;
             }
-            if($has_prescription === 1){
-                $customer->note .= "client dispose d'une ordonnance médicale";
-            }
-            $this->log('$customer->note :' . $customer->note, 'info');
+            $this->log('customer note from base php :' . $customer->note, 'info');
             $customer->update();
         }
 

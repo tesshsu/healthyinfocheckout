@@ -53,25 +53,31 @@ class HealthyInfoCheckOutActionsModuleFrontController extends ModuleFrontControl
      */
     public function processSelect()
     {
-        $has_insurance = Tools::getValue('has_insurance') == false ? false : true;
-        $has_prescription = Tools::getValue('has_prescription') == false ? false : true;
-
+        $has_insurance = Tools::getValue('has_insurance') == false ? "0" : "1";
+        $has_prescription = Tools::getValue('has_prescription') == false ? "0" : "1";
+        $text_has_insurance = 'client dispose d\'une assurance santé';
+        $text_has_prescription = 'client dispose d\'une ordonnance médicale';
         $context = Context::getContext();
+        // Get customer data
         $customerId = $context->customer->id;
         $customer = new Customer($customerId);
 
-        // Update customer data in database
-        $customer->note = '';
-        if($has_insurance){
-            $customer->note = 'client dispose d\'une assurance santé';
+        // Update customer  and order data in database
+        if($customer){
+            $this->log('submitGuestAccount', 'info');
+           if ($has_insurance == 1 && $has_prescription == 1) {
+               $customer->note = $text_has_insurance . ' et aussi ' . $text_has_prescription;
+           } elseif ($has_insurance == 1) {
+               $customer->note = $text_has_insurance;
+           } elseif ($has_prescription == 1) {
+               $customer->note = $text_has_prescription;
+           }
+            // Keep log if still in development
+            $this->log('$customer->note controller TEST :' . $customer->note, 'info');
+           if($customer->note){
+                $customer->update();
+           }
         }
-        if($has_prescription){
-            $customer->note .= "client dispose d'une ordonnance médicale";
-        }
-
-        // Keep log if still in development
-        $this->log('$customer->note :' . $customer->note, 'info');
-        $customer->update();
     }
 
 

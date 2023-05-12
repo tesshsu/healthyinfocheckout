@@ -1,0 +1,22 @@
+{
+  "name": "prestashop/healthyinfocheckout",
+  "description": "PrestaShop module healthyinfocheckout",
+    "homepage": "https://github.com/tesshsu/healthyinfocheckout",
+    "license": "AFL-3.0",
+    "type": "prestashop-module",
+    "authors": [
+      {
+        "name": "Tess",
+        "email": "tesshsu@gmail.com"
+      }
+    ],
+  "autoload": {
+    "psr-4": {
+      "PrestaShop\\Module\\HealthyInfoCheckout\\": "src/Controller/"
+    }
+  },
+  "config": {
+    "prepend-autoloader": false
+  }
+}
+

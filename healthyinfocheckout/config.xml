@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <module>
-	<name>healthyinfocheckout</name>
-	<displayName><![CDATA[Auth by uber API SDK and checkout with healthy question]]></displayName>
-	<version><![CDATA[1.0.0]]></version>
-	<description><![CDATA[Auth by uber API SDK and checkout with healthy question]]></description>
-	<author><![CDATA[Tess]]></author>
-	<tab><![CDATA[checkout]]></tab>
-	<is_configurable>1</is_configurable>
-	<need_instance>1</need_instance>
+    <name>healthyinfocheckout</name>
+    <displayName><![CDATA[HealthyQ]]></displayName>
+    <version><![CDATA[1.0.0]]></version>
+    <description><![CDATA[Adds extra questions about health insurance and prescription to the checkout page]]></description>
+    <author><![CDATA[Tess]]></author>
+    <tab><![CDATA[front_office_features]]></tab>
+	<confirmUninstall><![CDATA[Voulez-vous vraiment désinstaller ?]]></confirmUninstall>
+    <is_configurable>1</is_configurable>
+    <need_instance>0</need_instance>
 </module>

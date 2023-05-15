@@ -53,18 +53,18 @@ class HealthyInfoCheckOutActionsModuleFrontController extends ModuleFrontControl
      */
     public function processSelect()
     {
+        $context = Context::getContext();
+
         $has_insurance = Tools::getValue('has_insurance') == false ? "0" : "1";
         $has_prescription = Tools::getValue('has_prescription') == false ? "0" : "1";
         $text_has_insurance = 'client dispose d\'une assurance santé';
         $text_has_prescription = 'client dispose d\'une ordonnance médicale';
-        $context = Context::getContext();
-        // Get customer data
-        $customerId = $context->customer->id;
-        $customer = new Customer($customerId);
 
         // Update customer  and order data in database
-        if($customer){
-            $this->log('submitGuestAccount', 'info');
+        if($context->customer->isLogged()){
+            $customerId = $context->customer->id;
+            $customer = new Customer($customerId);
+            // Update customer note
            if ($has_insurance == 1 && $has_prescription == 1) {
                $customer->note = $text_has_insurance . ' et aussi ' . $text_has_prescription;
            } elseif ($has_insurance == 1) {
@@ -76,6 +76,17 @@ class HealthyInfoCheckOutActionsModuleFrontController extends ModuleFrontControl
             $this->log('$customer->note controller TEST :' . $customer->note, 'info');
            if($customer->note){
                 $customer->update();
+               // Insert into ps_healthy_info_checkout table
+               $db = Db::getInstance();
+               $data = array(
+                   'id_customer' => (int)$customerId,
+                   'has_insurance' => (int)$has_insurance,
+                   'has_prescription' => (int)$has_prescription,
+                   'extra_note' => pSQL($customer->note),
+                   'created_at' => date('Y-m-d H:i:s')
+               );
+               $db->insert(''. _DB_PREFIX_ .'healthy_info_checkout', $data);
+               $this->log('insert healthy_info_checkout : '. $data, 'info');
            }
         }
     }

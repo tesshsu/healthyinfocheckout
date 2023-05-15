@@ -32,6 +32,7 @@ if (!defined('_PS_VERSION_')) {
  * Class HealthyInfoCheckOut
  */
 use PrestaShop\PrestaShop\Core\Module\WidgetInterface;
+require_once _PS_MODULE_DIR_ . 'healthyinfocheckout/class/healthyInfoCheckoutModel.php';
 
 class HealthyInfoCheckOut extends Module implements WidgetInterface
 {
@@ -97,7 +98,7 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
         $this->LOGIN_ENDPOINT = $this->BASE_ENDPOINT . 'oauth/token';
         $this->messageService = "Si vous n'avez pas accès et clé secrète, veuillez contacter le service client";
         $this->authError = 'Veuillez vérifier vos clés d\'identification';
-        $this->templateFile = 'module:healthyinfocheckout/views/templates/hook/healthyinfocheckout.tpl';
+        $this->templateFile = 'module:healthyinfocheckout/views/templates/front/checkout/_partials/personal-information.tpl';
     }
 
     /**
@@ -106,7 +107,6 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
      */
     public function install()
     {
-        $this->log('Uninstall', 'info');
         return parent::install()
             && (bool) $this->registerHook('displayPersonalInformationTop')
             && $this->createTable();
@@ -318,82 +318,78 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
 
     public function renderWidget($hookName, array $configuration)
     {
-        if (!$this->isCached($this->templateFile, $this->getCacheId('healthyinfocheckout'))) {
-            $this->smarty->assign($this->getWidgetVariables($hookName, $configuration));
-        }
-        return $this->fetch('module:'.$this->name.'/views/templates/hook/healthyinfocheckout.tpl');
+        $this->log('render get widget', 'info');
+        $this->smarty->assign($this->getWidgetVariables($hookName, $configuration));
+
+        return $this->fetch($this->templateFile, $this->getCacheId('healthyinfocheckout'));
     }
 
     public function getWidgetVariables($hookName, array $configuration)
     {
-        return [
-            'message' => 'Hello world',
-        ];
-    }
-
-    public function hookDisplayPersonalInformationTop($params)
-    {
-        // Make sure has been authorize before the action
         $this->login();
-
+        $this->header[] = "Authorization: Bearer " . $this->authToken;
         // Then we integrate data send to ps_customer note
-        $customerId = $params['cookie']->id_customer;
+        $customerId = $this->context->customer->id;
         $customer = new Customer($customerId);
         $message = null;
         // By default has no insurance and prescription
-        $has_insurance = 0;
-        $has_prescription = 0;
         $text_has_insurance = 'client dispose d\'une assurance santé';
         $text_has_prescription = 'client dispose d\'une ordonnance médicale';
+        $has_insurance = 0;
+        $has_prescription = 0;
+        $this->log('render widget variable', 'info');
+        if ($customer->note != null) {
+            $this->log('submitSave', 'info');
+            $has_insurance = Tools::getValue('has_insurance') == false ? "0" : "1";
+            $has_prescription = Tools::getValue('has_insurance') == false ? "0" : "1";
+            $extra_note = Tools::getValue('extra_note');
+            Configuration::updateValue('has_insurance', $has_insurance, false);
+            Configuration::updateValue('has_prescription', $has_prescription, false);
+            configuration::updateValue('extra_note', $extra_note, false);
 
-        if ($customer) {
-            $this->log('enter condition********', 'info');
-            $has_insurance = Tools::getValue('has_insurance');
-            $has_prescription = Tools::getValue('has_prescription');
-            $this->log($has_insurance, 'info');
+            $this->log('$$has_insurance :' . $has_insurance, 'info');
+            $this->log('$has_prescription :' . $has_prescription, 'info');
             // Update customer data in database
-            if($has_insurance === 1 && $has_prescription === 1){
+            if($has_insurance == 1 && $has_prescription == 1){
                 $customer->note = $text_has_insurance . ' et aussi ' . $text_has_prescription;
-            } elseif ($has_insurance === 1) {
+            } elseif ($has_insurance == 1) {
                 $customer->note = $text_has_insurance;
-            } elseif ($has_prescription === 1) {
+            } elseif ($has_prescription == 1) {
                 $customer->note = $text_has_prescription;
             }
             $this->log('customer note from base php :' . $customer->note, 'info');
-            $customer->update();
+            if($customer->note && tools::isSubmit('extra_note')){
+                $customer->update();
+                // Insert into table ps_healthy_info_checkout
+                $healthyInfoCheckout = new healthyInfoCheckoutModel();
+                $healthyInfoCheckout->id_customer = $customerId;
+                $healthyInfoCheckout->has_insurance = $has_insurance;
+                $healthyInfoCheckout->has_prescription = $has_prescription;
+                $healthyInfoCheckout->extra_note = $extra_note;
+                $healthyInfoCheckout->created_at = date('Y-m-d H:i:s');
+                $healthyInfoCheckout->save();
+                $this->log('save table healthinfocheckout info :' . $healthyInfoCheckout->id, 'info');
+                $message = "Success valide";
+            }
         }
 
-        // Prepare data for template
-        $this->context->smarty->assign(array(
-            'hasInsurance' => $has_insurance,
-            'hasPrescription' => $has_prescription,
+        return array(
             'message' => $message,
+            'has_insurance' => Configuration::get('has_insurance'),
+            'has_prescription' => Configuration::get('has_prescription'),
+            'extra_note' => Configuration::get('extra_note'),
+        );
+
+        /*$this->smarty->assign([
+            'message' => $message,
+            'has_insurance' => Configuration::get('has_insurance'),
+            'has_prescription' => Configuration::get('has_prescription'),
             'select_healthy_option_url' => $this->context->link->getModuleLink(
-                'healthyinfocheckout',
-                'HealthyInfoCheckOut',
-                ['id_customer' => $customerId]
+                $this->name,
+                'action',
+                ['id_customer' => $customerId, 'has_insurance' => $has_insurance, 'has_prescription' => $has_prescription]
             ),
-        ));
-
-        return $this->display(__FILE__, 'views/templates/front/checkout/_partials/personal-information.tpl');
-    }
-
-    // Do not removed until to publish add on store will stock as abstract class show log inner prestashop logger
-    const DEFAULT_LOG_FILE = 'dev2.log';
-    public static function log($message, $level = 'debug', $fileName = null)
-    {
-        $fileDir = _PS_ROOT_DIR_ . '/var/logs/';
-
-        if (!$fileName)
-            $fileName = self::DEFAULT_LOG_FILE;
-
-        if (is_array($message) || is_object($message)) {
-            $message = print_r($message, true);
-        }
-
-        $formatted_message = '*' . $level . '* ' . " -- " . date('Y/m/d - H:i:s') . ': ' . $message . "\r\n";
-
-        return file_put_contents($fileDir . $fileName, $formatted_message, FILE_APPEND);
+        ]);*/
     }
 
     private function createTable()
@@ -414,5 +410,22 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
     {
         $sql = "DROP TABLE IF EXISTS `" . _DB_PREFIX_ . "healthy_info_checkout`";
         return Db::getInstance()->execute($sql);
+    }
+    // Do not removed until to publish add on store will stock as abstract class show log inner prestashop logger
+    const DEFAULT_LOG_FILE = 'dev2.log';
+    public static function log($message, $level = 'debug', $fileName = null)
+    {
+        $fileDir = _PS_ROOT_DIR_ . '/var/logs/';
+
+        if (!$fileName)
+            $fileName = self::DEFAULT_LOG_FILE;
+
+        if (is_array($message) || is_object($message)) {
+            $message = print_r($message, true);
+        }
+
+        $formatted_message = '*' . $level . '* ' . " -- " . date('Y/m/d - H:i:s') . ': ' . $message . "\r\n";
+
+        return file_put_contents($fileDir . $fileName, $formatted_message, FILE_APPEND);
     }
 }

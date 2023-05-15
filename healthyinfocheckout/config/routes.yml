@@ -1,8 +1,8 @@
-admin_healthy_question_demo:
-  path: healthyQuestion/demo
-  methods: [GET]
+admin_healthy_question:
+  path: healthyQuestion/select
+  methods: [GET, POST]
   defaults:
-    _controller: PrestaShop\Module\HealthyInfoCheckOut\Controller\HealthyQuestionController::demoAction
+    _controller: PrestaShop\Module\HealthyInfoCheckOut\Controllers\HealthyInfoCheckOutActionsModuleFrontController::processSelect
     _legacy_controller: false
     _syilex: false
     _validate: false

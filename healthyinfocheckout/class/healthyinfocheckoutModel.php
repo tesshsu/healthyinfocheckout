@@ -23,7 +23,7 @@
  * @copyright Since 2007 PrestaShop SA and Contributors
  * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License 3.0 (AFL-3.0)
  */
-class HealthyInfoCheckoutModel extends ObjectModel
+class healthyInfoCheckoutModel extends ObjectModel
 {
     /**
      * Identifier of HealthyInfoCheckout
@@ -60,40 +60,21 @@ class HealthyInfoCheckoutModel extends ObjectModel
      */
     public $extra_note;
 
+    /** @var string Object creation date */
+    public $created_at;
+
     /**
      * @see ObjectModel::$definition
      */
     public static $definition = [
         'table' => 'healthy_info_checkout',
         'primary' => 'id_healthy_info',
-        'multilang' => true,
-        'multilang_shop' => true,
         'fields' => [
             'id_customer' => ['type' => self::TYPE_INT, 'validate' => 'isUnsignedId', 'required' => true],
-            'has_insurance' => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'required' => true],
-            'has_prescription' => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'required' => true],
-            // Lang fields
-            'extra_note' => ['type' => self::TYPE_HTML, 'lang' => true, 'validate' => 'isCleanHtml', 'required' => true],
+            'has_insurance' => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'default' => true, '.required' => false],
+            'has_prescription' => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'default' => true, 'required' => false],
+            'extra_note' => ['type' => self::TYPE_HTML, 'lang' => true, 'validate' => 'isCleanHtml', 'required' => false],
+            'created_at' => ['type' => self::TYPE_DATE, 'validate' => 'isDate'],
         ],
     ];
-
-    /**
-     * Return the CustomText ID By shop ID
-     *
-     * @param int $shopId
-     *
-     * @return bool|int
-     */
-    public static function getCustomTextIdByShop($shopId)
-    {
-        $sql = 'SELECT i.`id_info` FROM `' . _DB_PREFIX_ . 'info` i
-		LEFT JOIN `' . _DB_PREFIX_ . 'info_shop` ish ON ish.`id_info` = i.`id_info`
-		WHERE ish.`id_shop` = ' . (int) $shopId;
-
-        if ($result = Db::getInstance()->executeS($sql)) {
-            return (int) reset($result)['id_info'];
-        }
-
-        return false;
-    }
 }

@@ -23,9 +23,6 @@
 *  International Registered Trademark & Property of PrestaShop SA
 *}
 {block name='healthyCheckForm'}
-  {if $message}
-    <div class="alert alert-success">{l s=$message d='Shop.Notifications.Success'}</div>
-  {/if}
   <div class="personal-information">
     <h3>Personal information</h3>
       <form

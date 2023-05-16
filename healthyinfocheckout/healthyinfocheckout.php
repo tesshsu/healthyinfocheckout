@@ -328,16 +328,15 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
     {
         $this->login();
         $this->header[] = "Authorization: Bearer " . $this->authToken;
-          $this->header[] = "Content-Type: application/json";
+        $this->header[] = "Content-Type: application/json";
+        // Start trigger Ajax call object
         $has_insurance = Tools::getValue('has_insurance') == false ? "0" : "1";
         $has_prescription = Tools::getValue('has_insurance') == false ? "0" : "1";
         $extra_note = Tools::getValue('extra_note');
-        $message = "Success valide";
 
         $this->log('render widget variable', 'info');
 
         return array(
-            'message' => $message,
             'has_insurance' => $has_insurance,
             'has_prescription' => $has_prescription,
             'extra_note' => $extra_note,

@@ -30,12 +30,11 @@
     <h3>Personal information</h3>
       <form
               class="clearfix"
-              id="healthy-checkout-form"
-              {*data-url-update="{url entity='module' name='healthyinfocheckout' controller='actions'
+              id="js-delivery"
+              data-url-update="{url entity='module' name='healthyinfocheckout' controller='actions'
                   params=[
                   'process' => 'select'
-              ]}"*}
-              action="{$smarty.server.HTTP_HOST}{$smarty.server.REQUEST_URI}
+              ]}"
               method="post"
       >
       <div class="form-group">
@@ -50,9 +49,6 @@
         <label class="form-control-label" for="input3">{l s='Do you have prescription?' mod='healthyinfocheckout'}</label>
         <input type="checkbox" name="has_prescription" value="has_prescription" {if $has_prescription}checked="checked"{/if} />
       </div>
-      <button class="btn btn-primary float-xs-left" type="submit" name="healthyinfocheckout" value="Submit">
-        {l s='Save' mod='healthyinfocheckout'}
-      </button>
     </form>
   </div>
 {/block}

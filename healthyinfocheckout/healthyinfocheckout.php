@@ -328,68 +328,20 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
     {
         $this->login();
         $this->header[] = "Authorization: Bearer " . $this->authToken;
-        // Then we integrate data send to ps_customer note
-        $customerId = $this->context->customer->id;
-        $customer = new Customer($customerId);
-        $message = null;
-        // By default has no insurance and prescription
-        $text_has_insurance = 'client dispose d\'une assurance santé';
-        $text_has_prescription = 'client dispose d\'une ordonnance médicale';
-        $has_insurance = 0;
-        $has_prescription = 0;
-        $this->log('render widget variable', 'info');
-        if ($customer->note != null) {
-            $this->log('submitSave', 'info');
-            $has_insurance = Tools::getValue('has_insurance') == false ? "0" : "1";
-            $has_prescription = Tools::getValue('has_insurance') == false ? "0" : "1";
-            $extra_note = Tools::getValue('extra_note');
-            Configuration::updateValue('has_insurance', $has_insurance, false);
-            Configuration::updateValue('has_prescription', $has_prescription, false);
-            configuration::updateValue('extra_note', $extra_note, false);
+          $this->header[] = "Content-Type: application/json";
+        $has_insurance = Tools::getValue('has_insurance') == false ? "0" : "1";
+        $has_prescription = Tools::getValue('has_insurance') == false ? "0" : "1";
+        $extra_note = Tools::getValue('extra_note');
+        $message = "Success valide";
 
-            $this->log('$$has_insurance :' . $has_insurance, 'info');
-            $this->log('$has_prescription :' . $has_prescription, 'info');
-            // Update customer data in database
-            if($has_insurance == 1 && $has_prescription == 1){
-                $customer->note = $text_has_insurance . ' et aussi ' . $text_has_prescription;
-            } elseif ($has_insurance == 1) {
-                $customer->note = $text_has_insurance;
-            } elseif ($has_prescription == 1) {
-                $customer->note = $text_has_prescription;
-            }
-            $this->log('customer note from base php :' . $customer->note, 'info');
-            if($customer->note && tools::isSubmit('extra_note')){
-                $customer->update();
-                // Insert into table ps_healthy_info_checkout
-                $healthyInfoCheckout = new healthyInfoCheckoutModel();
-                $healthyInfoCheckout->id_customer = $customerId;
-                $healthyInfoCheckout->has_insurance = $has_insurance;
-                $healthyInfoCheckout->has_prescription = $has_prescription;
-                $healthyInfoCheckout->extra_note = $extra_note;
-                $healthyInfoCheckout->created_at = date('Y-m-d H:i:s');
-                $healthyInfoCheckout->save();
-                $this->log('save table healthinfocheckout info :' . $healthyInfoCheckout->id, 'info');
-                $message = "Success valide";
-            }
-        }
+        $this->log('render widget variable', 'info');
 
         return array(
             'message' => $message,
-            'has_insurance' => Configuration::get('has_insurance'),
-            'has_prescription' => Configuration::get('has_prescription'),
-            'extra_note' => Configuration::get('extra_note'),
+            'has_insurance' => $has_insurance,
+            'has_prescription' => $has_prescription,
+            'extra_note' => $extra_note,
         );
-
-        /*$this->smarty->assign([
-            'message' => $message,
-            'has_insurance' => Configuration::get('has_insurance'),
-            'has_prescription' => Configuration::get('has_prescription'),
-            'select_healthy_option_url' => $this->context->link->getModuleLink(
-                $this->name,
-                'action',
-                ['id_customer' => $customerId, 'has_insurance' => $has_insurance, 'has_prescription' => $has_prescription]
-            ),
-        ]);*/
     }
 
     private function createTable()

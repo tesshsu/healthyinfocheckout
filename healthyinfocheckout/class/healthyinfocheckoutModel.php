@@ -71,9 +71,9 @@ class healthyInfoCheckoutModel extends ObjectModel
         'primary' => 'id_healthy_info',
         'fields' => [
             'id_customer' => ['type' => self::TYPE_INT, 'validate' => 'isUnsignedId', 'required' => true],
-            'has_insurance' => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'default' => true, '.required' => false],
-            'has_prescription' => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'default' => true, 'required' => false],
-            'extra_note' => ['type' => self::TYPE_HTML, 'lang' => true, 'validate' => 'isCleanHtml', 'required' => false],
+            'has_insurance' => ['type' => self::TYPE_BOOL, 'validate' => 'isBool'],
+            'has_prescription' => ['type' => self::TYPE_BOOL, 'validate' => 'isBool'],
+            'extra_note' => ['type' => self::TYPE_STRING, 'validate' => 'isMessage', 'size' => 300],
             'created_at' => ['type' => self::TYPE_DATE, 'validate' => 'isDate'],
         ],
     ];

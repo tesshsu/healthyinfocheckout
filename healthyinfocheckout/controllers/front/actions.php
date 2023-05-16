@@ -53,17 +53,19 @@ class HealthyInfoCheckOutActionsModuleFrontController extends ModuleFrontControl
      */
     public function processSelect()
     {
+        $this->log('processSelect', 'info');
         $context = Context::getContext();
+        $customerId = $context->customer->id;
+        $customer = new Customer($customerId);
 
         $has_insurance = Tools::getValue('has_insurance') == false ? "0" : "1";
         $has_prescription = Tools::getValue('has_prescription') == false ? "0" : "1";
         $text_has_insurance = 'client dispose d\'une assurance santé';
         $text_has_prescription = 'client dispose d\'une ordonnance médicale';
+        $extra_note = Tools::getValue('extra_note');
 
         // Update customer  and order data in database
-        if($context->customer->isLogged()){
-            $customerId = $context->customer->id;
-            $customer = new Customer($customerId);
+        if($context->customer->isLogged() && $has_insurance == 1 || $has_prescription == 1) {
             // Update customer note
            if ($has_insurance == 1 && $has_prescription == 1) {
                $customer->note = $text_has_insurance . ' et aussi ' . $text_has_prescription;
@@ -74,20 +76,18 @@ class HealthyInfoCheckOutActionsModuleFrontController extends ModuleFrontControl
            }
             // Keep log if still in development
             $this->log('$customer->note controller TEST :' . $customer->note, 'info');
-           if($customer->note){
-                $customer->update();
-               // Insert into ps_healthy_info_checkout table
-               $db = Db::getInstance();
-               $data = array(
-                   'id_customer' => (int)$customerId,
-                   'has_insurance' => (int)$has_insurance,
-                   'has_prescription' => (int)$has_prescription,
-                   'extra_note' => pSQL($customer->note),
-                   'created_at' => date('Y-m-d H:i:s')
-               );
-               $db->insert(''. _DB_PREFIX_ .'healthy_info_checkout', $data);
-               $this->log('insert healthy_info_checkout : '. $data, 'info');
-           }
+            $customer->update();
+            // Insert into ps_healthy_info_checkout table
+            $db = Db::getInstance();
+            $data = array(
+                'id_customer' => (int)$customerId,
+                'has_insurance' => (int)$has_insurance,
+                'has_prescription' => (int)$has_prescription,
+                'extra_note' => pSQL($extra_note),
+                'created_at' => date('Y-m-d H:i:s')
+            );
+            $db->insert('healthy_info_checkout', $data);
+            $this->log('insert healthy_info_checkout : '. $data, 'info');
         }
     }
 

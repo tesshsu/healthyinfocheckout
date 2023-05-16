@@ -33,6 +33,7 @@ if (!defined('_PS_VERSION_')) {
  */
 use PrestaShop\PrestaShop\Core\Module\WidgetInterface;
 require_once _PS_MODULE_DIR_ . 'healthyinfocheckout/class/healthyInfoCheckoutModel.php';
+require_once _PS_MODULE_DIR_ . 'healthyinfocheckout/class/healthyInfoContentModel.php';
 
 class HealthyInfoCheckOut extends Module implements WidgetInterface
 {
@@ -71,6 +72,10 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
     private $authError;
     private $templateFile;
 
+    public $adminControllers = [
+           'AdminHealthyInfo',
+    ];
+
 
     public function __construct()
     {
@@ -99,6 +104,10 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
         $this->messageService = "Si vous n'avez pas accès et clé secrète, veuillez contacter le service client";
         $this->authError = 'Veuillez vérifier vos clés d\'identification';
         $this->templateFile = 'module:healthyinfocheckout/views/templates/front/checkout/_partials/personal-information.tpl';
+        // Settings paths
+        if (!$this->_path) {
+            $this->_path = __PS_BASE_URI__ . 'modules/' . $this->name . '/';
+        }
     }
 
     /**
@@ -107,14 +116,16 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
      */
     public function install()
     {
+
         return parent::install()
+            && $this->installTab()
             && (bool) $this->registerHook('displayPersonalInformationTop')
             && $this->createTable();
     }
 
     public function uninstall()
     {
-        if (parent::uninstall()) {
+        if (parent::uninstall() && $this->uninstallTab()) {
                 if (!$this->unregisterHook('displayPersonalInformationTop')) {
                     return FALSE;
                 }
@@ -124,6 +135,54 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
         $this->deleteTable();
         $this->log('Uninstall', 'info');
         return FALSE;
+    }
+
+    /**
+     * install tab
+     *
+     * @return bool
+     */
+    public function installTab() {
+        $result = true;
+
+        foreach ($this->adminControllers as $adminController){
+            $tab = new Tab();
+            $tab->active = 1;
+            $tab->class_name = $adminController;
+            $tab->name = array();
+            foreach (Language::getLanguages(true) as $lang){
+                $tab->name[$lang['id_lang']] = $this->l('HealthyQ');
+            }
+            $tab->id_parent = 0;
+            $tab->module = $this->name;
+            $result &= $tab->add();
+        }
+
+        return $result;
+    }
+
+    /**
+     * uninstall tab
+     *
+     * @return bool
+     */
+    public function uninstallTab() {
+        $result = true;
+
+        foreach ($this->adminControllers as $adminController){
+            $idTab = Tab::getIdFromClassName($adminController);
+            if ($idTab){
+                $tab = new Tab($idTab);
+                $result &= $tab->delete();
+            }
+        }
+
+        return $result;
+    }
+
+    public function reset() {
+        $this->deleteTable();
+        $this->createTable();
     }
     /**
      * @return bool
@@ -345,23 +404,73 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
 
     private function createTable()
     {
-        $sql = "CREATE TABLE IF NOT EXISTS `" . _DB_PREFIX_ . "healthy_info_checkout` (
+        $db = Db::getInstance();
+
+        // Create ps_healthy_info_checkout table
+        $tableExists = $db->executeS("SHOW TABLES LIKE '" . _DB_PREFIX_ . "healthy_info_checkout'");
+        if (empty($tableExists)) {
+            $sql = "CREATE TABLE IF NOT EXISTS `" . _DB_PREFIX_ . "healthy_info_checkout` (
             `id_healthy_info_checkout` int(11) unsigned NOT NULL AUTO_INCREMENT,
             `id_customer` int(10) unsigned NOT NULL,
             `has_insurance` BOOLEAN NOT NULL DEFAULT 0,
             `has_prescription` BOOLEAN NOT NULL DEFAULT 0,
             `extra_note` TEXT NULL,
+            `content` TEXT NULL,
             `created_at` datetime NOT NULL,
             PRIMARY KEY (`id_healthy_info_checkout`)
         ) ENGINE=" . _MYSQL_ENGINE_ . " DEFAULT CHARSET=utf8;";
-        return Db::getInstance()->execute($sql);
+
+            $db->execute($sql);
+        }
+
+        // Create ps_healthy_info_content table
+        $tableExists = $db->executeS("SHOW TABLES LIKE '" . _DB_PREFIX_ . "healthy_info_content'");
+        if (empty($tableExists)) {
+            $sql = "CREATE TABLE IF NOT EXISTS `" . _DB_PREFIX_ . "healthy_info_content` (
+            `id_healthy_info` int(11) unsigned NOT NULL AUTO_INCREMENT,
+            `content` TEXT NULL,
+            `created_at` datetime NOT NULL,
+            `updated_by` int(10) unsigned NOT NULL,
+            PRIMARY KEY (`id_healthy_info`)
+        ) ENGINE=" . _MYSQL_ENGINE_ . " DEFAULT CHARSET=utf8;";
+
+            $db->execute($sql);
+        }
     }
+
 
     private function deleteTable()
     {
         $sql = "DROP TABLE IF EXISTS `" . _DB_PREFIX_ . "healthy_info_checkout`";
+        $sql .= "DROP TABLE IF EXISTS `" . _DB_PREFIX_ . "healthy_info_content`";
         return Db::getInstance()->execute($sql);
     }
+
+    /**
+     * Display the back office header and add custom menu item.
+     *
+     * @param array $params Hook parameters
+     * @return string Generated HTML for the custom menu item
+     */
+    public function hookDisplayBackOfficeHeader($params)
+    {
+        // Check if the current page is the module's configuration page
+        if (Tools::getValue('configure') === $this->name) {
+            // Add CSS and JavaScript files for your module's configuration page
+            $this->context->controller->addCSS($this->_path . 'views/dist/config.css');
+            $this->context->controller->addJS($this->_path . 'views/dist/config.js');
+        }
+
+        $currentItem = 'healthyInfo'; // Replace 'healthyInfo' with the appropriate menu item identifier
+        $this->context->smarty->assign(array(
+            'menuLink' => $this->context->link->getAdminLink('AdminHealthyInfo'),
+            'menuTitle' => $this->l('HealthyInfo'),
+            'currentItem' => $currentItem,
+        ));
+
+        return $this->display(__FILE__, 'views/templates/admin/menu.tpl');
+    }
+
     // Do not removed until to publish add on store will stock as abstract class show log inner prestashop logger
     const DEFAULT_LOG_FILE = 'dev2.log';
     public static function log($message, $level = 'debug', $fileName = null)

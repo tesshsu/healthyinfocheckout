@@ -1,6 +1,6 @@
 {
   "name": "prestashop/healthyinfocheckout",
-  "description": "PrestaShop module healthyinfocheckout",
+  "description": "PrestaShop - healthyinfocheckout",
     "homepage": "https://github.com/tesshsu/healthyinfocheckout",
     "license": "AFL-3.0",
     "type": "prestashop-module",
@@ -10,13 +10,27 @@
         "email": "tesshsu@gmail.com"
       }
     ],
+  "require": {
+    "php": ">=7.2"
+  },
+  "require-dev": {
+    "prestashop/php-dev-tools": "^3.4"
+  },
   "autoload": {
     "psr-4": {
-      "PrestaShop\\Module\\HealthyInfoCheckout\\": "src/Controller/"
-    }
+      "PrestaShop\\Module\\HealthyInfoCheckout\\": "src/"
+    },
+    "classmap": ["healthyinfocheckout.php"],
+    "exclude-from-classmap": []
   },
   "config": {
-    "prepend-autoloader": false
+    "preferred-install": "dist",
+    "classmap-authoritative": true,
+    "optimize-autoloader": true,
+    "prepend-autoloader": false,
+    "platform": {
+      "php": "5.6"
+    }
   }
 }
 

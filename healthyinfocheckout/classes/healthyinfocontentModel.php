@@ -23,7 +23,7 @@
  * @copyright Since 2007 PrestaShop SA and Contributors
  * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License 3.0 (AFL-3.0)
  */
-class healthyInfoCheckoutModel extends ObjectModel
+class healthyInfoContentModel extends ObjectModel
 {
     /**
      * Identifier of HealthyInfoCheckout
@@ -31,58 +31,35 @@ class healthyInfoCheckoutModel extends ObjectModel
      * @var int
      */
     public $id;
-
-    /**
-     * Identifier of customer
-     *
-     * @var int
-     */
-    public $id_customer;
-
-    /**
-     * boolean of has insurance
-     *
-     * @var boolean
-     */
-    public $has_insurance;
-
-    /**
-     * boolean of has prescription
-     *
-     * @var boolean
-     */
-    public $has_prescription;
-
-    /**
-     * HTML format of Extra note
-     *
-     * @var array
-     */
-    public $extra_note;
-
     /**
      * HTML format of content
      *
      * @var array
      */
     public $content;
-
-    /** @var string Object creation date */
+    /**
+     * Date of creation
+     *
+     * @var string
+     */
     public $created_at;
+    /**
+     * Identifier of admin update
+     *
+     * @var string
+     */
+    public $updated_by;
 
     /**
      * @see ObjectModel::$definition
      */
     public static $definition = [
-        'table' => 'healthy_info_checkout',
+        'table' => 'healthy_info_content',
         'primary' => 'id_healthy_info',
         'fields' => [
-            'id_customer' => ['type' => self::TYPE_INT, 'validate' => 'isUnsignedId', 'required' => true],
-            'has_insurance' => ['type' => self::TYPE_BOOL, 'validate' => 'isBool'],
-            'has_prescription' => ['type' => self::TYPE_BOOL, 'validate' => 'isBool'],
-            'extra_note' => ['type' => self::TYPE_STRING, 'validate' => 'isMessage', 'size' => 300],
-            'content' => ['type' => self::TYPE_HTML, 'validate' => 'isCleanHtml'],
-            'created_at' => ['type' => self::TYPE_DATE, 'validate' => 'isDate'],
+            'content' => ['type' => self::TYPE_HTML, 'lang' => true, 'validate' => 'isCleanHtml', 'required' => true],
+            'created_at' => ['type' => self::TYPE_DATE, 'validate' => 'isDate', 'required' => true],
+            'updated_by' => ['type' => self::TYPE_INT, 'validate' => 'isUnsignedId', 'required' => true],
         ],
     ];
 }

@@ -1,12 +1,5 @@
-admin_healthy_question:
-  path: healthyQuestion/select
+admin_healthy_content:
+  path: healthyinfocheckout/content
   methods: [GET, POST]
   defaults:
-    _controller: PrestaShop\Module\HealthyInfoCheckOut\Controllers\HealthyInfoCheckOutActionsModuleFrontController::processSelect
-    _legacy_controller: false
-    _syilex: false
-    _validate: false
-    _admin: true
-    _is_module_controller: true
-    _legacy_link: false
-    _legacy_link_only: false
+    _controller: PrestaShop\Module\healthyinfocheckout\Controllers\AdminHealthyInfoController::initContent

@@ -32,7 +32,9 @@ if (!defined('_PS_VERSION_')) {
  * Class HealthyInfoCheckOut
  */
 use PrestaShop\PrestaShop\Core\Module\WidgetInterface;
-require_once _PS_MODULE_DIR_ . 'healthyinfocheckout/class/healthyInfoCheckoutModel.php';
+require_once _PS_MODULE_DIR_ . 'healthyinfocheckout/classes/healthyInfoCheckoutModel.php';
+require_once _PS_MODULE_DIR_ . 'healthyinfocheckout/classes/healthyInfoContentModel.php';
+require_once _PS_MODULE_DIR_ . 'healthyinfocheckout/classes/logger.php';
 
 class HealthyInfoCheckOut extends Module implements WidgetInterface
 {
@@ -71,6 +73,10 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
     private $authError;
     private $templateFile;
 
+    public $adminControllers = [
+           'AdminHealthyInfo',
+    ];
+
 
     public function __construct()
     {
@@ -99,6 +105,10 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
         $this->messageService = "Si vous n'avez pas accès et clé secrète, veuillez contacter le service client";
         $this->authError = 'Veuillez vérifier vos clés d\'identification';
         $this->templateFile = 'module:healthyinfocheckout/views/templates/front/checkout/_partials/personal-information.tpl';
+        // Settings paths
+        if (!$this->_path) {
+            $this->_path = __PS_BASE_URI__ . 'modules/' . $this->name . '/';
+        }
     }
 
     /**
@@ -107,14 +117,17 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
      */
     public function install()
     {
+
+        Logger::log('Install', 'info');
         return parent::install()
+            && $this->installTab()
             && (bool) $this->registerHook('displayPersonalInformationTop')
             && $this->createTable();
     }
 
     public function uninstall()
     {
-        if (parent::uninstall()) {
+        if (parent::uninstall() && $this->uninstallTab()) {
                 if (!$this->unregisterHook('displayPersonalInformationTop')) {
                     return FALSE;
                 }
@@ -122,8 +135,70 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
         }
         // If uninstall delete table
         $this->deleteTable();
-        $this->log('Uninstall', 'info');
+        Logger::log('Uninstall', 'info');
         return FALSE;
+    }
+
+    public function enable($force_all = false)
+    {
+        return parent::enable($force_all)
+            && $this->installTab();
+    }
+
+    public function disable($force_all = false)
+    {
+        return parent::disable($force_all)
+            && $this->uninstallTab();
+    }
+
+    /**
+     * install tab
+     *
+     * @return bool
+     */
+    private function installTab()
+    {
+        $tabId = (int) Tab::getIdFromClassName('AdminHealthyInfo');
+        if (!$tabId) {
+            $tabId = null;
+        }
+
+        $tab = new Tab($tabId);
+        $tab->active = 1;
+        $tab->class_name = 'AdminHealthyInfo';
+        $tab->route_name = 'admin_healthy_content';
+        $tab->visible = 1;
+        $tab->name = array();
+        foreach (Language::getLanguages() as $lang) {
+            $tab->name[$lang['id_lang']] = $this->trans('HealthyQ', array(), 'Modules.healthyinfocheckout.Admin', $lang['locale']);
+        }
+        $tab->id_parent = (int) Tab::getIdFromClassName('ShopParameters');
+        $tab->module = $this->name;
+        Logger::log('Install tab', 'info');
+        return $tab->save();
+    }
+
+
+    /**
+     * uninstall tab
+     *
+     * @return bool
+     */
+    private function uninstallTab()
+    {
+        $tabId = (int) Tab::getIdFromClassName('AdminHealthyInfo');
+        if (!$tabId) {
+            return true;
+        }
+
+        $tab = new Tab($tabId);
+
+        return $tab->delete();
+    }
+
+    public function reset($force_all = false) {
+        return parent::enable($force_all)
+            && $this->installTab();
     }
     /**
      * @return bool
@@ -149,14 +224,14 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
             $data['client_secret'] = $secretKey;
             $data['audience'] = $audience;
             $data['grant_type'] = $grant_type ;
-            $this->log('$data :' . json_encode($data), 'info');
+
             $loginData = $this->callApi("POST", $this->LOGIN_ENDPOINT, $this->header, json_encode($data));
             $response = json_decode($loginData['data'], true); // decode the JSON string
-            $this->log('$loginData :' . json_encode($loginData), 'info');
+            Logger::log('loginData by Logger :' . json_encode($loginData), 'info');
 
             // Verify post return login as auth true
             if ($accessKey && $secretKey && $response['access_token']) {
-                $this->log('Pass auth0', 'info');
+                Logger::log('Pass auth0', 'info');
                 return true;
             }
         }
@@ -218,7 +293,6 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
         if (!empty($_POST) and Tools::isSubmit('submitSave')) {
             $this->_postValidation();
             if (!sizeof($this->_postErrors)){
-                $this->log('Post validation submit', 'info');
                 $this->authToken = NULL;
                 $this->_postProcess();
             }
@@ -297,10 +371,8 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
         // Check configuration values
         $client_id = Tools::getValue('client_id');
         $client_secret = Tools::getValue('client_secret');
-        $this->log($client_id, 'info');
-        $this->log($client_secret, 'info');
 
-        if (Tools::getValue('client_id') == '' || Tools::getValue('client_secret') == '') {
+        if ($client_id == '' || $client_secret == '') {
             $this->_postErrors[] = $this->l($this->messageService);
         }
     }
@@ -318,7 +390,7 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
 
     public function renderWidget($hookName, array $configuration)
     {
-        $this->log('render get widget', 'info');
+        Logger::log('render get widget', 'info');
         $this->smarty->assign($this->getWidgetVariables($hookName, $configuration));
 
         return $this->fetch($this->templateFile, $this->getCacheId('healthyinfocheckout'));
@@ -334,7 +406,7 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
         $has_prescription = Tools::getValue('has_insurance') == false ? "0" : "1";
         $extra_note = Tools::getValue('extra_note');
 
-        $this->log('render widget variable', 'info');
+        Logger::log('render widget variable', 'info');
 
         return array(
             'has_insurance' => $has_insurance,
@@ -345,23 +417,75 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
 
     private function createTable()
     {
-        $sql = "CREATE TABLE IF NOT EXISTS `" . _DB_PREFIX_ . "healthy_info_checkout` (
+        $db = Db::getInstance();
+
+        // Create ps_healthy_info_checkout table
+        $tableExists = $db->executeS("SHOW TABLES LIKE '" . _DB_PREFIX_ . "healthy_info_checkout'");
+        if (empty($tableExists)) {
+            $sql = "CREATE TABLE IF NOT EXISTS `" . _DB_PREFIX_ . "healthy_info_checkout` (
             `id_healthy_info_checkout` int(11) unsigned NOT NULL AUTO_INCREMENT,
             `id_customer` int(10) unsigned NOT NULL,
             `has_insurance` BOOLEAN NOT NULL DEFAULT 0,
             `has_prescription` BOOLEAN NOT NULL DEFAULT 0,
             `extra_note` TEXT NULL,
+            `content` TEXT NULL,
             `created_at` datetime NOT NULL,
             PRIMARY KEY (`id_healthy_info_checkout`)
         ) ENGINE=" . _MYSQL_ENGINE_ . " DEFAULT CHARSET=utf8;";
-        return Db::getInstance()->execute($sql);
+
+            $db->execute($sql);
+        }
+
+        // Create ps_healthy_info_content table
+        $tableExists = $db->executeS("SHOW TABLES LIKE '" . _DB_PREFIX_ . "healthy_info_content'");
+        if (empty($tableExists)) {
+            $sql = "CREATE TABLE IF NOT EXISTS `" . _DB_PREFIX_ . "healthy_info_content` (
+            `id_healthy_info` int(11) unsigned NOT NULL AUTO_INCREMENT,
+            `content` TEXT NULL,
+            `created_at` datetime NOT NULL,
+            `updated_by` int(10) unsigned NOT NULL,
+            PRIMARY KEY (`id_healthy_info`)
+        ) ENGINE=" . _MYSQL_ENGINE_ . " DEFAULT CHARSET=utf8;";
+
+            $db->execute($sql);
+        }
     }
+
 
     private function deleteTable()
     {
         $sql = "DROP TABLE IF EXISTS `" . _DB_PREFIX_ . "healthy_info_checkout`";
+        $sql .= "DROP TABLE IF EXISTS `" . _DB_PREFIX_ . "healthy_info_content`";
         return Db::getInstance()->execute($sql);
     }
+
+    /**
+     * Display the back office header and add custom menu item.
+     *
+     * @param array $params Hook parameters
+     * @return string Generated HTML for the custom menu item
+     */
+    /*public function hookDisplayBackOfficeHeader($params)
+    {
+        // Check if the current page is the module's configuration page
+        if (Tools::getValue('configure') === $this->name) {
+            Logger::log('hook display back office header', 'info');
+            // Add CSS and JavaScript files for your module's configuration page
+            //$this->context->controller->addCSS($this->_path . 'views/dist/config.css');
+            //$this->context->controller->addJS($this->_path . 'views/dist/config.js');
+            $this->context->controller->addCss($this->getPathUri() . 'views/dist/config.css');
+        }
+
+        $currentItem = 'healthyInfo'; // Replace 'healthyInfo' with the appropriate menu item identifier
+        $this->context->smarty->assign(array(
+            'menuLink' => $this->context->link->getAdminLink('AdminHealthyInfo'),
+            'menuTitle' => $this->l('HealthyInfo'),
+            'currentItem' => $currentItem,
+        ));
+
+        return $this->display(__FILE__, 'views/templates/admin/menu.tpl');
+    }*/
+
     // Do not removed until to publish add on store will stock as abstract class show log inner prestashop logger
     const DEFAULT_LOG_FILE = 'dev2.log';
     public static function log($message, $level = 'debug', $fileName = null)

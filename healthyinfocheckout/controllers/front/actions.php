@@ -53,7 +53,7 @@ class HealthyInfoCheckOutActionsModuleFrontController extends ModuleFrontControl
      */
     public function processSelect()
     {
-        $this->log('processSelect', 'info');
+        Logger::log('processSelect', 'info');
         $context = Context::getContext();
         $customerId = $context->customer->id;
         $customer = new Customer($customerId);
@@ -75,7 +75,7 @@ class HealthyInfoCheckOutActionsModuleFrontController extends ModuleFrontControl
                $customer->note = $text_has_prescription;
            }
             // Keep log if still in development
-            $this->log('$customer->note controller TEST :' . $customer->note, 'info');
+            Logger::log('$customer->note controller TEST :' . $customer->note, 'info');
             $customer->update();
             // Insert into ps_healthy_info_checkout table
             $db = Db::getInstance();
@@ -87,7 +87,7 @@ class HealthyInfoCheckOutActionsModuleFrontController extends ModuleFrontControl
                 'created_at' => date('Y-m-d H:i:s')
             );
             $db->insert('healthy_info_checkout', $data);
-            $this->log('insert healthy_info_checkout : '. $data, 'info');
+            Logger::log('insert healthy_info_checkout : '. $data, 'info');
         }
     }
 

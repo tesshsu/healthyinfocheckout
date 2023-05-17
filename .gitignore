@@ -10,3 +10,6 @@
 # System Files
 .DS_Store
 Thumbs.db
+
+# log files
+healthyinfocheckout/var/logs/*

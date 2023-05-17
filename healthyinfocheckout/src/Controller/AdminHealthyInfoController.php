@@ -1,4 +1,7 @@
 <?php
+
+use PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController;
+
 /**
  * Copyright since 2007 PrestaShop SA and Contributors
  * PrestaShop is an International Registered Trademark & Property of PrestaShop SA
@@ -17,17 +20,37 @@
  * @copyright Since 2007 PrestaShop SA and Contributors
  * @license   https://opensource.org/licenses/AFL-3.0 Academic Free License version 3.0
  */
-class AdminHealthyInfoController extends ModuleAdminController
+
+namespace PrestaShop\Module\HealthyInfoChekcout\Controller;
+
+use AdminController;
+use Doctrine\Common\Cache\CacheProvider;
+use HealthyInfoCheckOut;
+use HelperForm;
+use Tools;
+
+class AdminHealthyInfoController extends FrameworkBundleAdminController
 {
     public $name = 'healthyinfocheckout';
     /** @var healthyinfocheckout */
     public $module;
 
-    public function __construct()
+    /**
+     * @var CacheProvider
+     */
+    private $cache;
+
+    /**
+     * @var int|null
+     */
+    private $shopId;
+    private $context;
+    private $controller_name;
+
+    public function __construct(CacheProvider $cache, $shopId)
     {
-        // Controller initialization
-        $this->bootstrap = true;
-        parent::__construct();
+        $this->cache = $cache;
+        $this->shopId = $shopId;
     }
 
     public function renderForm()

@@ -166,7 +166,7 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
         $tab = new Tab($tabId);
         $tab->active = 1;
         $tab->class_name = 'AdminHealthyInfo';
-        $tab->route_name = 'admin_healthy_content';
+        $tab->route_name = 'admin_healthyinfo_content';
         $tab->visible = 1;
         $tab->name = array();
         foreach (Language::getLanguages() as $lang) {
@@ -458,33 +458,6 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
         $sql .= "DROP TABLE IF EXISTS `" . _DB_PREFIX_ . "healthy_info_content`";
         return Db::getInstance()->execute($sql);
     }
-
-    /**
-     * Display the back office header and add custom menu item.
-     *
-     * @param array $params Hook parameters
-     * @return string Generated HTML for the custom menu item
-     */
-    /*public function hookDisplayBackOfficeHeader($params)
-    {
-        // Check if the current page is the module's configuration page
-        if (Tools::getValue('configure') === $this->name) {
-            Logger::log('hook display back office header', 'info');
-            // Add CSS and JavaScript files for your module's configuration page
-            //$this->context->controller->addCSS($this->_path . 'views/dist/config.css');
-            //$this->context->controller->addJS($this->_path . 'views/dist/config.js');
-            $this->context->controller->addCss($this->getPathUri() . 'views/dist/config.css');
-        }
-
-        $currentItem = 'healthyInfo'; // Replace 'healthyInfo' with the appropriate menu item identifier
-        $this->context->smarty->assign(array(
-            'menuLink' => $this->context->link->getAdminLink('AdminHealthyInfo'),
-            'menuTitle' => $this->l('HealthyInfo'),
-            'currentItem' => $currentItem,
-        ));
-
-        return $this->display(__FILE__, 'views/templates/admin/menu.tpl');
-    }*/
 
     // Do not removed until to publish add on store will stock as abstract class show log inner prestashop logger
     const DEFAULT_LOG_FILE = 'dev2.log';

@@ -1,0 +1,8 @@
+services:
+  # Controller
+  PrestaShop\Module\HealthyInfoCheckout\Controller\AdminHealthyInfoController:
+    public: true
+    class: PrestaShop\Module\HealthyInfoCheckout\Controller\AdminHealthyInfoController
+    arguments:
+      - '@doctrine.cache.provider'
+      - '@=service("prestashop.adapter.shop.context").getContextShopID()'

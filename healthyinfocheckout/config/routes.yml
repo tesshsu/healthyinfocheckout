@@ -1,5 +1,5 @@
-admin_healthy_content:
+admin_healthyinfo_content:
   path: healthyinfocheckout/content
   methods: [GET, POST]
   defaults:
-    _controller: PrestaShop\Module\healthyinfocheckout\Controllers\AdminHealthyInfoController::initContent
+    _controller: PrestaShop\Module\HealthyInfoCheckout\Controller\AdminHealthyInfoController::initContent

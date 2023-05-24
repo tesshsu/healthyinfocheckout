@@ -177,7 +177,6 @@ class ComposerStaticInit7dce3a2b7c7044572d1d33823308440c
     );
 
     public static $classMap = array (
-        'AdminHealthyInfoController' => __DIR__ . '/../..' . '/controllers/admin/AdminHealthyInfoController.php',
         'Attribute' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
         'Composer\\Pcre\\MatchAllResult' => __DIR__ . '/..' . '/composer/pcre/src/MatchAllResult.php',

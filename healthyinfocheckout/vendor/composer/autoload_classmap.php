@@ -6,7 +6,6 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
-    'AdminHealthyInfoController' => $baseDir . '/controllers/admin/AdminHealthyInfoController.php',
     'Attribute' => $vendorDir . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
     'Composer\\InstalledVersions' => $vendorDir . '/composer/InstalledVersions.php',
     'Composer\\Pcre\\MatchAllResult' => $vendorDir . '/composer/pcre/src/MatchAllResult.php',

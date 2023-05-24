@@ -12,8 +12,13 @@ use Symfony\Component\HttpFoundation\Request;
 class AdminHealthyInfoController extends FrameworkBundleAdminController
 {
     public $name = 'healthyinfocheckout';
-    /** @var healthyinfocheckout */
+    /** @var Module */
     public $module;
+
+    public function __construct()
+    {
+        $this->bootstrap = true;
+    }
 
     public function initContent(Request $request): Response
     {
@@ -55,8 +60,11 @@ class AdminHealthyInfoController extends FrameworkBundleAdminController
 
     private function renderForm(\Symfony\Component\Form\FormView $formView): Response
     {
-        return $this->render('@Modules/healthyinfocheckout/views/templates/admin/_partials/edit_content.tpl', [
+        return $this->render(
+            '@Modules/healthyinfocheckout/views/templates/admin/_partials/edit_content.html.twig',
+            [
             'form' => $formView,
+                'path' => 'ddddd',
         ]);
     }
 }

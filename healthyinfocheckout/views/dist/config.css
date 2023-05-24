@@ -81,3 +81,39 @@
   background-color: #337ab7;
 }
 
+/* styles.css for edit content page*/
+
+.panel {
+  background-color: #25b9d7;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.row {
+  margin-bottom: 10px;
+}
+
+.col-md-7 {
+  width: 70%;
+}
+
+.col-md-5 {
+  width: 30%;
+}
+
+.banner-question-left {
+  float: left;
+}
+
+.banner-question-right {
+  float: right;
+}
+
+.submitButton {
+  padding: 8px 16px;
+  background-color: #fff;
+  color: darkblue;
+  border: none;
+  cursor: pointer;
+}
+

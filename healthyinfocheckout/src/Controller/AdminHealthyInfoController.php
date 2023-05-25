@@ -2,17 +2,15 @@
 
 namespace PrestaShop\Module\HealthyInfoCheckout\Controller;
 
+use PrestaShop\Module\HealthyInfoCheckout\Entity\HealthyInfoContent;
+use PrestaShop\Module\HealthyInfoCheckout\Forms\HealthyInfoContentType;
 use PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Form\Extension\Core\Type\TextareaType;
-use Symfony\Component\Form\Extension\Core\Type\SubmitType;
-use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
 
 class AdminHealthyInfoController extends FrameworkBundleAdminController
 {
     public $name = 'healthyinfocheckout';
-    /** @var Module */
     public $module;
 
     public function __construct()
@@ -20,51 +18,50 @@ class AdminHealthyInfoController extends FrameworkBundleAdminController
         $this->bootstrap = true;
     }
 
-    public function initContent(Request $request): Response
+    const DEFAULT_LOG_FILE = 'dev2.log';
+    public static function log($message, $level = 'debug', $fileName = null)
     {
-        $form = $this->createForm($request);
-        $form->handleRequest($request);
+        $fileDir = _PS_ROOT_DIR_ . '/var/logs/';
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            // Handle form submission
-            $content = $form->get('content')->getData();
+        if (!$fileName)
+            $fileName = self::DEFAULT_LOG_FILE;
 
-            // Save the content or perform any necessary actions
-            // ...
-
-            return new Response('Form submitted successfully');
+        if (is_array($message) || is_object($message)) {
+            $message = print_r($message, true);
         }
 
-        return $this->renderForm($form->createView());
+        $formatted_message = '*' . $level . '* ' . " -- " . date('Y/m/d - H:i:s') . ': ' . $message . "\r\n";
+
+        return file_put_contents($fileDir . $fileName, $formatted_message, FILE_APPEND);
     }
 
-    protected function createForm(string $type, $data = null, array $options = []): FormInterface
+    public function initContent(Request $request): Response
     {
-        $formBuilder = $this->createFormBuilder();
-        $formBuilder->add(
-            'content',
-            TextareaType::class,
-            [
-                'label' => 'Content',
-                'required' => true,
-                'attr' => [
-                    'rows' => 10,
-                    'cols' => 80,
-                ],
-            ]
-        );
-        $formBuilder->add('submit', SubmitType::class, ['label' => 'Save']);
+        $this->log('initContent');
+        $em = $this->getDoctrine()->getManager();
+        $form = $this->createForm(HealthyInfoContentType::class);
+        $form->handleRequest($request);
 
-        return $formBuilder->getForm();
-    }
+        // If form is submitted and valid, insert content into database
+        if ($form->isSubmitted() && $form->isValid()) {
+            $this->log('form submitted');
+            dump($form->getData());
+            $healthyInfoContent = new HealthyInfoContent();
+            $healthyInfoContent->setContent($form->get('content')->getData());
+            $healthyInfoContent->setAdminId(1);
+            $healthyInfoContent->setCreatedAt(new \DateTime());
+            dump($healthyInfoContent);
+            $em->persist($healthyInfoContent);
+            $em->flush();
+        } else {
+            $this->log('form not submitted');
+        }
 
-    private function renderForm(\Symfony\Component\Form\FormView $formView): Response
-    {
         return $this->render(
             '@Modules/healthyinfocheckout/views/templates/admin/_partials/edit_content.html.twig',
             [
-            'form' => $formView,
-                'path' => 'ddddd',
-        ]);
+                'form' => $form->createView(),
+            ]
+        );
     }
 }

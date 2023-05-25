@@ -979,6 +979,8 @@ class ComposerStaticInit7dce3a2b7c7044572d1d33823308440c
         'PrestaShop\\HeaderStamp\\LicenseHeader' => __DIR__ . '/..' . '/prestashop/header-stamp/src/LicenseHeader.php',
         'PrestaShop\\HeaderStamp\\Reporter' => __DIR__ . '/..' . '/prestashop/header-stamp/src/Reporter.php',
         'PrestaShop\\Module\\HealthyInfoCheckout\\Controller\\AdminHealthyInfoController' => __DIR__ . '/../..' . '/src/Controller/AdminHealthyInfoController.php',
+        'PrestaShop\\Module\\HealthyInfoCheckout\\Entity\\HealthyInfoContent' => __DIR__ . '/../..' . '/src/Entity/HealthyInfoContent.php',
+        'PrestaShop\\Module\\HealthyInfoCheckout\\Forms\\HealthyInfoContentType' => __DIR__ . '/../..' . '/src/Forms/HealthyInfoContentType.php',
         'Psr\\Cache\\CacheException' => __DIR__ . '/..' . '/psr/cache/src/CacheException.php',
         'Psr\\Cache\\CacheItemInterface' => __DIR__ . '/..' . '/psr/cache/src/CacheItemInterface.php',
         'Psr\\Cache\\CacheItemPoolInterface' => __DIR__ . '/..' . '/psr/cache/src/CacheItemPoolInterface.php',

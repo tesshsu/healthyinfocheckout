@@ -808,6 +808,8 @@ return array(
     'PrestaShop\\HeaderStamp\\LicenseHeader' => $vendorDir . '/prestashop/header-stamp/src/LicenseHeader.php',
     'PrestaShop\\HeaderStamp\\Reporter' => $vendorDir . '/prestashop/header-stamp/src/Reporter.php',
     'PrestaShop\\Module\\HealthyInfoCheckout\\Controller\\AdminHealthyInfoController' => $baseDir . '/src/Controller/AdminHealthyInfoController.php',
+    'PrestaShop\\Module\\HealthyInfoCheckout\\Entity\\HealthyInfoContent' => $baseDir . '/src/Entity/HealthyInfoContent.php',
+    'PrestaShop\\Module\\HealthyInfoCheckout\\Forms\\HealthyInfoContentType' => $baseDir . '/src/Forms/HealthyInfoContentType.php',
     'Psr\\Cache\\CacheException' => $vendorDir . '/psr/cache/src/CacheException.php',
     'Psr\\Cache\\CacheItemInterface' => $vendorDir . '/psr/cache/src/CacheItemInterface.php',
     'Psr\\Cache\\CacheItemPoolInterface' => $vendorDir . '/psr/cache/src/CacheItemPoolInterface.php',

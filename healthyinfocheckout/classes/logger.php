@@ -20,7 +20,7 @@ class Logger
         }
 
         if (is_array($message) || is_object($message)) {
-            $message = print_r($message, true);
+            $message = json_encode($message, JSON_PRETTY_PRINT);
         }
 
         $formatted_message = '*' . $level . '* ' . " -- " . date('Y/m/d - H:i:s') . ': ' . $message . "\r\n";

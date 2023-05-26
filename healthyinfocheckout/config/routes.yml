@@ -3,3 +3,9 @@ admin_healthyinfo_content:
   methods: [GET, POST]
   defaults:
     _controller: PrestaShop\Module\HealthyInfoCheckout\Controller\AdminHealthyInfoController::initContent
+
+admin_healthinfo_content_delete:
+  path: healthyinfocheckout/content/delete/{id}
+  methods: [GET]
+  defaults:
+    _controller: PrestaShop\Module\HealthyInfoCheckout\Controller\AdminHealthyInfoController::deleteContent

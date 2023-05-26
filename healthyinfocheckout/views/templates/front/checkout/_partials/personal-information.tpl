@@ -25,6 +25,7 @@
 {block name='healthyCheckForm'}
   <div class="personal-information">
     <h3>Personal information</h3>
+      <h5>{if $content} {$content} {else} {l s='Please fill in your personal information' mod='healthyinfocheckout'} {/if}</h5>
       <form
               class="clearfix"
               id="js-delivery"

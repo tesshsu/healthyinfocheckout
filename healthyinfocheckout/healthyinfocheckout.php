@@ -391,9 +391,13 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
     public function renderWidget($hookName, array $configuration)
     {
         Logger::log('render get widget', 'info');
-        $this->smarty->assign($this->getWidgetVariables($hookName, $configuration));
 
-        return $this->fetch($this->templateFile, $this->getCacheId('healthyinfocheckout'));
+        if ($this->login()) {
+            $this->smarty->assign($this->getWidgetVariables($hookName, $configuration));
+            return $this->fetch($this->templateFile, $this->getCacheId('healthyinfocheckout'));
+        } else {
+            return ''; // Return an empty string if the user is not logged in
+        }
     }
 
     public function getWidgetVariables($hookName, array $configuration)
@@ -405,13 +409,16 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
         $has_insurance = Tools::getValue('has_insurance') == false ? "0" : "1";
         $has_prescription = Tools::getValue('has_insurance') == false ? "0" : "1";
         $extra_note = Tools::getValue('extra_note');
-
-        Logger::log('render widget variable', 'info');
+        // Get content by database ps_healthy_info_content
+        $db = Db::getInstance();
+        // select content form last row of table ps_healthy_info_content
+        $content = $db->executeS("SELECT * FROM " . _DB_PREFIX_ . "healthy_info_content ORDER BY id_healthy_info DESC LIMIT 1");
 
         return array(
             'has_insurance' => $has_insurance,
             'has_prescription' => $has_prescription,
             'extra_note' => $extra_note,
+            'content' => $content[0]['content'],
         );
     }
 

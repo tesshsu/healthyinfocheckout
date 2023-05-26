@@ -45,10 +45,13 @@ class AdminHealthyInfoController extends FrameworkBundleAdminController
         // If form is submitted and valid, insert content into database
         if ($form->isSubmitted() && $form->isValid()) {
             $this->log('form submitted');
-            dump($form->getData());
+            // Get admin Id
+            $admin = $this->getUser();
+            $adminId = $admin->getId();
+            $this->log('admin id: ', $adminId);
             $healthyInfoContent = new HealthyInfoContent();
             $healthyInfoContent->setContent($form->get('content')->getData());
-            $healthyInfoContent->setAdminId(1);
+            $healthyInfoContent->setAdminId($adminId);
             $healthyInfoContent->setCreatedAt(new \DateTime());
             dump($healthyInfoContent);
             $em->persist($healthyInfoContent);
@@ -57,11 +60,30 @@ class AdminHealthyInfoController extends FrameworkBundleAdminController
             $this->log('form not submitted');
         }
 
+        $items = $em->getRepository(HealthyInfoContent::class)->findAll();
+
         return $this->render(
             '@Modules/healthyinfocheckout/views/templates/admin/_partials/edit_content.html.twig',
             [
                 'form' => $form->createView(),
+                'items' => $items,
             ]
         );
+    }
+
+    public function deleteContent(int $id): Response
+    {
+        $this->log('deleteContent');
+        $em = $this->getDoctrine()->getManager();
+        $item = $em->getRepository(HealthyInfoContent::class)->findOneBy(['id' => $id]);
+        $this->log('item found: ' . print_r($item, true)); // Convert $item to string using print_r()
+
+        if($item){
+            $em->remove($item);
+            $em->flush();
+            $this->addFlash('success', 'Content deleted');
+        }
+
+        return $this->redirectToRoute('admin_healthyinfo_content');
     }
 }

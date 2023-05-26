@@ -2,7 +2,12 @@
 {% trans_default_domain "Admin.Design.Feature" %}
 
 {% block content %}
-  {# Include CSS file #}
+  {% for message in app.flashes('notice') %}
+    <div class="alert alert-success">{{ message }}</div>
+  {% endfor %}
+  {% for message in app.flashes('error') %}
+    <div class="alert alert-danger">{{ message }}</div>
+  {% endfor %}
   <link rel="stylesheet" href="{{ asset('../modules/healthyinfocheckout/views/dist/config.css') }}">
   <div id="delivengo_admin" class="col-lg-offset-1 col-lg-10 container">
     {{ include('@Modules/healthyinfocheckout/views/templates/admin/banner.html.twig') }}
@@ -10,6 +15,32 @@
       {{form_start(form)}}
 
       {{form_end(form)}}
+    </div>
+    <div class="panel">
+      <table class="table">
+        <thead>
+        <tr>
+          <th>#</th>
+          <th>Content</th>
+          <th>Updated by</th>
+          <th>Create at</th>
+          <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for item in items %}
+          <tr>
+            <td>{{ item.id }}</td>
+            <td>{{ item.content }}</td>
+            <td>{{ item.updated_by }}</td>
+            <td>{{ item.createdAt|date('Y-m-d H:i:s') }}</td>
+            <td>
+              <a href="{{ path('admin_healthinfo_content_delete', {'id': item.id}) }}" class="btn btn-danger">Delete</a>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
 {% endblock %}

@@ -27,6 +27,9 @@ To install the module, follow these steps:
 ![pp](https://user-images.githubusercontent.com/3927152/224308772-7c146292-391e-4c91-9f87-72642a77ac1c.png)
 
 ## Configuration
+Once auth pass, you could go to Advance Parameters > HealthyQ
+![2](https://github.com/tesshsu/healthyinfocheckout/assets/3927152/ffe6d13f-6914-406a-9087-0bb013c7a577)
+![1](https://github.com/tesshsu/healthyinfocheckout/assets/3927152/446374c6-b313-4e52-92ee-c42ec33bdd43)
 
 
 ## USAGE & REQUIREMENTS

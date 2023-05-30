@@ -177,6 +177,7 @@ class ComposerStaticInit7dce3a2b7c7044572d1d33823308440c
     );
 
     public static $classMap = array (
+        'AdminHealthyInfoListController' => __DIR__ . '/../..' . '/controllers/admin/AdminHealthyInfoListController.php',
         'Attribute' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
         'Composer\\Pcre\\MatchAllResult' => __DIR__ . '/..' . '/composer/pcre/src/MatchAllResult.php',
@@ -979,6 +980,7 @@ class ComposerStaticInit7dce3a2b7c7044572d1d33823308440c
         'PrestaShop\\HeaderStamp\\LicenseHeader' => __DIR__ . '/..' . '/prestashop/header-stamp/src/LicenseHeader.php',
         'PrestaShop\\HeaderStamp\\Reporter' => __DIR__ . '/..' . '/prestashop/header-stamp/src/Reporter.php',
         'PrestaShop\\Module\\HealthyInfoCheckout\\Controller\\AdminHealthyInfoController' => __DIR__ . '/../..' . '/src/Controller/AdminHealthyInfoController.php',
+        'PrestaShop\\Module\\HealthyInfoCheckout\\Entity\\HealthyInfoCheckout' => __DIR__ . '/../..' . '/src/Entity/HealthyInfoCheckout.php',
         'PrestaShop\\Module\\HealthyInfoCheckout\\Entity\\HealthyInfoContent' => __DIR__ . '/../..' . '/src/Entity/HealthyInfoContent.php',
         'PrestaShop\\Module\\HealthyInfoCheckout\\Forms\\HealthyInfoContentType' => __DIR__ . '/../..' . '/src/Forms/HealthyInfoContentType.php',
         'Psr\\Cache\\CacheException' => __DIR__ . '/..' . '/psr/cache/src/CacheException.php',

@@ -196,7 +196,8 @@ class HealthyInfoCheckOut extends Module implements WidgetInterface
         return $tab->delete();
     }
 
-    public function reset($force_all = false) {
+    public function reset($force_all = false)
+    {
         return parent::enable($force_all)
             && $this->installTab();
     }

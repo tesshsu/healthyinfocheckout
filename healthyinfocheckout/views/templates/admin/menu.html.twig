@@ -1,0 +1,9 @@
+<div id="menu">
+  <ul>
+    <li {% if partial == 'home' %}class="selected"{% endif %}><a href="{{ home_url|escape('html') }}">{{ 'Home'|trans({}, 'home') }}</a></li>
+    <li {% if partial == 'list' %}class="selected"{% endif %}><a href="{{ list_url|escape('html') }}">{{ 'HealthyInfo  list'|trans({}, 'list') }}</a></li>
+    <li {% if partial == 'logs' %}class="selected"{% endif %}><a href="#">{{ 'Logs'|trans({}, 'healthyinfocheckout Logs') }}</a></li>
+  </ul>
+</div>
+
+

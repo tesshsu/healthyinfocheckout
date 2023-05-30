@@ -60,13 +60,6 @@ class healthyInfoCheckoutModel extends ObjectModel
      */
     public $extra_note;
 
-    /**
-     * HTML format of content
-     *
-     * @var array
-     */
-    public $content;
-
     /** @var string Object creation date */
     public $created_at;
 
@@ -81,7 +74,6 @@ class healthyInfoCheckoutModel extends ObjectModel
             'has_insurance' => ['type' => self::TYPE_BOOL, 'validate' => 'isBool'],
             'has_prescription' => ['type' => self::TYPE_BOOL, 'validate' => 'isBool'],
             'extra_note' => ['type' => self::TYPE_STRING, 'validate' => 'isMessage', 'size' => 300],
-            'content' => ['type' => self::TYPE_HTML, 'validate' => 'isCleanHtml'],
             'created_at' => ['type' => self::TYPE_DATE, 'validate' => 'isDate'],
         ],
     ];

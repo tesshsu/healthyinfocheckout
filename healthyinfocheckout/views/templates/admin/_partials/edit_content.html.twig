@@ -9,38 +9,45 @@
     <div class="alert alert-danger">{{ message }}</div>
   {% endfor %}
   <link rel="stylesheet" href="{{ asset('../modules/healthyinfocheckout/views/dist/config.css') }}">
-  <div id="delivengo_admin" class="col-lg-offset-1 col-lg-10 container">
+  <div id="healthyInfo_admin" class="col-lg-offset-1 col-lg-10 container">
     {{ include('@Modules/healthyinfocheckout/views/templates/admin/banner.html.twig') }}
-    <div class="panel">
-      {{form_start(form)}}
+    <div id="healthyInfo-content-home" class="panel">
+      <div class="row">
+        {{ include('@Modules/healthyinfocheckout/views/templates/admin/menu.html.twig', { partial: 'home' }) }}
+        <div class="col col-12 healthyInfo-content-col text-center">
+          <div class="panel">
+            {{form_start(form)}}
 
-      {{form_end(form)}}
-    </div>
-    <div class="panel">
-      <table class="table">
-        <thead>
-        <tr>
-          <th>#</th>
-          <th>Content</th>
-          <th>Updated by</th>
-          <th>Create at</th>
-          <th>Actions</th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for item in items %}
-          <tr>
-            <td>{{ item.id }}</td>
-            <td>{{ item.content }}</td>
-            <td>{{ item.updated_by }}</td>
-            <td>{{ item.createdAt|date('Y-m-d H:i:s') }}</td>
-            <td>
-              <a href="{{ path('admin_healthinfo_content_delete', {'id': item.id}) }}" class="btn btn-danger">Delete</a>
-            </td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
+            {{form_end(form)}}
+          </div>
+          <div class="panel">
+            <table class="table">
+              <thead>
+              <tr>
+                <th>#</th>
+                <th>Content</th>
+                <th>Updated by</th>
+                <th>Create at</th>
+                <th>Actions</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for item in items %}
+                <tr>
+                  <td>{{ item.id }}</td>
+                  <td>{{ item.content }}</td>
+                  <td>{{ item.updated_by }}</td>
+                  <td>{{ item.createdAt|date('Y-m-d H:i:s') }}</td>
+                  <td>
+                    <a href="{{ path('admin_healthinfo_content_delete', {'id': item.id}) }}" class="btn btn-danger">Delete</a>
+                  </td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 {% endblock %}

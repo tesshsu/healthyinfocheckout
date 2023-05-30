@@ -4,10 +4,40 @@
 {% block content %}
   {# Include CSS file #}
   <link rel="stylesheet" href="{{ asset('../modules/healthyinfocheckout/views/dist/config.css') }}">
-  <div id="delivengo_admin" class="col-lg-offset-1 col-lg-10 container">
+  <div id="healthyInfo_admin" class="col-lg-offset-1 col-lg-10 container">
     {{ include('@Modules/healthyinfocheckout/views/templates/admin/banner.html.twig') }}
-    <div class="panel">
-      {{ dump(data) }}
+    <div id="healthyInfo-content-home" class="panel">
+      <div class="row">
+        {{ include('@Modules/healthyinfocheckout/views/templates/admin/menu.html.twig', { partial: 'home' }) }}
+        <div class="col col-12 healthyInfo-content-col text-center">
+          <div class="panel">
+            <table class="table">
+              <thead>
+              <tr>
+                <th>#</th>
+                <th>Id Customer</th>
+                <th>Has Insurance</th>
+                <th>Has Prescription</th>
+                <th>Extra note</th>
+                <th>Create At</th>
+              </tr>
+              </thead>
+              <tbody>
+              {% for item in items %}
+                <tr>
+                  <td>{{ item.id }}</td>
+                  <td>{{ item.id_customer }}</td>
+                  <td>{% if item.has_insurance == 1 %}Yes{% else %}No{% endif %}</td>
+                  <td>{% if item.has_prescription == 1 %}Yes{% else %}No{% endif %}</td>
+                  <td>{{ item.extra_note }}</td>
+                  <td>{{ item.createdAt|date('Y-m-d H:i:s') }}</td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 {% endblock %}

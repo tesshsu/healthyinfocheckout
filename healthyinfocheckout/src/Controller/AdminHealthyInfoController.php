@@ -3,6 +3,7 @@
 namespace PrestaShop\Module\HealthyInfoCheckout\Controller;
 
 use PrestaShop\Module\HealthyInfoCheckout\Entity\HealthyInfoContent;
+use PrestaShop\Module\HealthyInfoCheckout\Entity\HealthyInfoCheckout;
 use PrestaShop\Module\HealthyInfoCheckout\Forms\HealthyInfoContentType;
 use PrestaShopBundle\Controller\Admin\FrameworkBundleAdminController;
 use Symfony\Component\HttpFoundation\Response;
@@ -12,6 +13,7 @@ class AdminHealthyInfoController extends FrameworkBundleAdminController
 {
     public $name = 'healthyinfocheckout';
     public $module;
+    protected $context;
 
     public function __construct()
     {
@@ -67,6 +69,9 @@ class AdminHealthyInfoController extends FrameworkBundleAdminController
             [
                 'form' => $form->createView(),
                 'items' => $items,
+                'partial' => 'home',
+                'home_url' => $this->generateUrl('admin_healthyinfo_content'),
+                'list_url' => $this->generateUrl('admin_healthinfo_list'),
             ]
         );
     }
@@ -85,5 +90,22 @@ class AdminHealthyInfoController extends FrameworkBundleAdminController
         }
 
         return $this->redirectToRoute('admin_healthyinfo_content');
+    }
+
+    public function listContent(): Response
+    {
+        $this->log('listContent');
+        $em = $this->getDoctrine()->getManager();
+        $items = $em->getRepository(HealthyInfoCheckout::class)->findAll();
+        $this->log('items: ' . print_r($items, true)); // Convert $items to string using print_r()
+
+        return $this->render(
+            '@Modules/healthyinfocheckout/views/templates/admin/_partials/list.html.twig',
+            [
+                'items' => $items,
+                'home_url' => $this->generateUrl('admin_healthyinfo_content'),
+                'list_url' => $this->generateUrl('admin_healthinfo_list'),
+            ]
+        );
     }
 }

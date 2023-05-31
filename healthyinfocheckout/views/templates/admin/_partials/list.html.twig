@@ -15,7 +15,7 @@
               <thead>
               <tr>
                 <th>#</th>
-                <th>Id Customer</th>
+                <th>Customer</th>
                 <th>Has Insurance</th>
                 <th>Has Prescription</th>
                 <th>Extra note</th>
@@ -26,11 +26,11 @@
               {% for item in items %}
                 <tr>
                   <td>{{ item.id }}</td>
-                  <td>{{ item.id_customer }}</td>
+                  <td>{{ item.customer }} / {{ item.email }}</td>
                   <td>{% if item.has_insurance == 1 %}Yes{% else %}No{% endif %}</td>
                   <td>{% if item.has_prescription == 1 %}Yes{% else %}No{% endif %}</td>
-                  <td>{{ item.extra_note }}</td>
-                  <td>{{ item.createdAt|date('Y-m-d H:i:s') }}</td>
+                  <td>{{ item.extra_note is empty ? 'NaN' : item.extra_note }}</td>
+                  <td>{{ item.created_at|date('Y-m-d H:i:s') }}</td>
                 </tr>
               {% endfor %}
               </tbody>

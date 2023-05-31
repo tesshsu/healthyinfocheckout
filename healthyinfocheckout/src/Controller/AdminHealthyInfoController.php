@@ -2,6 +2,7 @@
 
 namespace PrestaShop\Module\HealthyInfoCheckout\Controller;
 
+use PrestaShop\Module\HealthyInfoCheckout\Entity\Customer;
 use PrestaShop\Module\HealthyInfoCheckout\Entity\HealthyInfoContent;
 use PrestaShop\Module\HealthyInfoCheckout\Entity\HealthyInfoCheckout;
 use PrestaShop\Module\HealthyInfoCheckout\Forms\HealthyInfoContentType;
@@ -99,10 +100,30 @@ class AdminHealthyInfoController extends FrameworkBundleAdminController
         $items = $em->getRepository(HealthyInfoCheckout::class)->findAll();
         $this->log('items: ' . print_r($items, true)); // Convert $items to string using print_r()
 
+        $customerRepository = $em->getRepository(Customer::class);
+        $formattedItems =[];
+
+        foreach($items as $item){
+            $customerId = $item->id_customer;
+            $customer = $customerRepository->find($customerId);
+
+            $formattedItems[] = [
+                'id' => $item->getId(),
+                'customer' => $customer->getFirstname() . ' ' . $customer->getLastname(),
+                'email' => $customer->getEmail(),
+                'has_insurance' => $item->has_insurance,
+                'has_prescription' => $item->has_prescription,
+                'extra_note' => $item->extra_note,
+                'created_at' => $item->created_at,
+            ];
+        }
+
+        $this->log('items: ' . print_r($formattedItems, true));
+
         return $this->render(
             '@Modules/healthyinfocheckout/views/templates/admin/_partials/list.html.twig',
             [
-                'items' => $items,
+                'items' => $formattedItems,
                 'home_url' => $this->generateUrl('admin_healthyinfo_content'),
                 'list_url' => $this->generateUrl('admin_healthinfo_list'),
             ]

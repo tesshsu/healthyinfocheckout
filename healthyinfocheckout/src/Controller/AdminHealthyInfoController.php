@@ -2,6 +2,7 @@
 
 namespace PrestaShop\Module\HealthyInfoCheckout\Controller;
 
+use PrestaShop\Module\HealthyInfoCheckout\Entity\Customer;
 use PrestaShop\Module\HealthyInfoCheckout\Entity\HealthyInfoContent;
 use PrestaShop\Module\HealthyInfoCheckout\Entity\HealthyInfoCheckout;
 use PrestaShop\Module\HealthyInfoCheckout\Forms\HealthyInfoContentType;
@@ -96,16 +97,73 @@ class AdminHealthyInfoController extends FrameworkBundleAdminController
     {
         $this->log('listContent');
         $em = $this->getDoctrine()->getManager();
-        $items = $em->getRepository(HealthyInfoCheckout::class)->findAll();
-        $this->log('items: ' . print_r($items, true)); // Convert $items to string using print_r()
+        $items = $em->getRepository(HealthyInfoCheckout::class)->findBy([], ['created_at' => 'DESC']);
+
+        $customerRepository = $em->getRepository(Customer::class);
+        $formattedItems =[];
+
+        foreach($items as $item){
+            $customerId = $item->id_customer;
+            $customer = $customerRepository->find($customerId);
+
+            $formattedItems[] = [
+                'id' => $item->getId(),
+                'customer' => $customer->getFirstname() . ' ' . $customer->getLastname(),
+                'email' => $customer->getEmail(),
+                'has_insurance' => $item->has_insurance,
+                'has_prescription' => $item->has_prescription,
+                'extra_note' => $item->extra_note,
+                'created_at' => $item->created_at,
+            ];
+        }
 
         return $this->render(
             '@Modules/healthyinfocheckout/views/templates/admin/_partials/list.html.twig',
             [
-                'items' => $items,
+                'items' => $formattedItems,
                 'home_url' => $this->generateUrl('admin_healthyinfo_content'),
                 'list_url' => $this->generateUrl('admin_healthinfo_list'),
             ]
         );
+    }
+
+    public function updateHealthyInfoList(Request $request, $id): Response
+    {
+        $this->log('updateHealthyInfoList');
+        $em = $this->getDoctrine()->getManager();
+        $item = $em->getRepository(HealthyInfoCheckout::class)->findOneBy(['id' => $id]);
+
+        if(!$item){
+            $this->addFlash('error', 'Item not found');
+            return $this->redirectToRoute('admin_healthinfo_list');
+        }
+
+        $formData = $request->request->get('update_form');
+
+        // Update the item with the form data
+        $item->setHasInsurance($formData['has_insurance'] ?? false);
+        $item->setHasPrescription($formData['has_prescription'] ?? false);
+        $item->setExtraNote($formData['extra_note'] ?? '');
+        // Persist and flush the changes to the database
+        $em->persist($item);
+        $em->flush();
+
+        $this->addFlash('success', 'Item updated');
+
+        return $this->redirectToRoute('admin_healthinfo_list');
+    }
+
+
+    public function showUpdateForm(int $id): Response
+    {
+        // Get the item based on the provided ID
+        $item = $this->getDoctrine()->getRepository(HealthyInfoCheckout::class)->find($id);
+
+        // Render the update form template and pass the item to it
+        return $this->render('@Modules/healthyinfocheckout/views/templates/admin/_partials/update_form.html.twig', [
+            'item' => $item,
+            'home_url' => $this->generateUrl('admin_healthyinfo_content'),
+            'list_url' => $this->generateUrl('admin_healthinfo_list'),
+        ]);
     }
 }

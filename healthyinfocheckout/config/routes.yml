@@ -15,3 +15,16 @@ admin_healthinfo_list:
   methods: [GET]
   defaults:
     _controller: PrestaShop\Module\HealthyInfoCheckout\Controller\AdminHealthyInfoController::listContent
+
+admin_healthinfo_list_update:
+  path: healthyinfocheckout/list/update/{id}
+  methods: [POST]
+  defaults:
+    _controller: PrestaShop\Module\HealthyInfoCheckout\Controller\AdminHealthyInfoController::updateHealthyInfoList
+
+admin_healthinfo_list_update_form:
+  path: healthyinfocheckout/list/update/{id}/form
+  methods: [GET, POST]
+  defaults:
+    _controller: PrestaShop\Module\HealthyInfoCheckout\Controller\AdminHealthyInfoController::showUpdateForm
+

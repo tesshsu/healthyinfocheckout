@@ -809,6 +809,7 @@ return array(
     'PrestaShop\\HeaderStamp\\LicenseHeader' => $vendorDir . '/prestashop/header-stamp/src/LicenseHeader.php',
     'PrestaShop\\HeaderStamp\\Reporter' => $vendorDir . '/prestashop/header-stamp/src/Reporter.php',
     'PrestaShop\\Module\\HealthyInfoCheckout\\Controller\\AdminHealthyInfoController' => $baseDir . '/src/Controller/AdminHealthyInfoController.php',
+    'PrestaShop\\Module\\HealthyInfoCheckout\\Entity\\Customer' => $baseDir . '/src/Entity/Customer.php',
     'PrestaShop\\Module\\HealthyInfoCheckout\\Entity\\HealthyInfoCheckout' => $baseDir . '/src/Entity/HealthyInfoCheckout.php',
     'PrestaShop\\Module\\HealthyInfoCheckout\\Entity\\HealthyInfoContent' => $baseDir . '/src/Entity/HealthyInfoContent.php',
     'PrestaShop\\Module\\HealthyInfoCheckout\\Forms\\HealthyInfoContentType' => $baseDir . '/src/Forms/HealthyInfoContentType.php',

@@ -1,0 +1,44 @@
+{% extends '@PrestaShop/Admin/layout.html.twig' %}
+{% trans_default_domain "Admin.Design.Feature" %}
+
+{% block content %}
+  {% if app.flashes('success') is not empty %}
+    <div class="alert alert-success">
+      {{ app.flashes('success')[0] }}
+    </div>
+  {% endif %}
+  {% if app.flashes('error') is not empty %}
+    <div class="alert alert-danger">
+      {{ app.flashes('error')[0] }}
+    </div>
+  {% endif %}
+  {# Include CSS file #}
+  <link rel="stylesheet" href="{{ asset('../modules/healthyinfocheckout/views/dist/config.css') }}">
+  <div id="healthyInfo_admin" class="col-lg-offset-1 col-lg-10 container">
+    {{ include('@Modules/healthyinfocheckout/views/templates/admin/banner.html.twig') }}
+    <div id="healthyInfo-content-home" class="panel">
+      <div class="row">
+        {{ include('@Modules/healthyinfocheckout/views/templates/admin/menu.html.twig', { partial: 'home' }) }}
+        <div class="col col-12 healthyInfo-content-col text-center">
+          <div class="panel">
+            <form action="{{ path('admin_healthinfo_list_update', {'id': item.id}) }}" method="POST">
+              <div class="form-group">
+                <label for="has_insurance">Has Insurance:</label>
+                <input type="checkbox" id="has_insurance" name="update_form[has_insurance]" {% if item.hasInsurance %}checked{% endif %}>
+              </div>
+              <div class="form-group">
+                <label for="has_prescription">Has Prescription:</label>
+                <input type="checkbox" id="has_prescription" name="update_form[has_prescription]" {% if item.hasPrescription %}checked{% endif %}>
+              </div>
+              <div class="form-group">
+                <label for="extra_note">Extra Note:</label>
+                <input type="text" id="extra_note" name="update_form[extra_note]" value="{{ item.extraNote }}">
+              </div>
+              <button type="submit" class="btn btn-primary">Update</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

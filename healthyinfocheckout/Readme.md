@@ -23,12 +23,13 @@ To install the module, follow these steps:
 ![t1](https://user-images.githubusercontent.com/3927152/224308715-3b0aafcb-886c-4b7b-9ba3-6e10d82c1f5e.png)
 ![t2](https://user-images.githubusercontent.com/3927152/224308737-d849a0b9-b109-419e-91f4-f3127facafd3.png)
 
-Make sure to enable the module and save configuration
-
 - Goto `Design > Position > displayPersonalInformationTop` to make sure HealthyQ had show up in this hook position
   ![pp](https://user-images.githubusercontent.com/3927152/224308772-7c146292-391e-4c91-9f87-72642a77ac1c.png)
 
 ## Configuration
+Once auth pass, you could go to Advance Parameters > HealthyQ
+![2](https://github.com/tesshsu/healthyinfocheckout/assets/3927152/ffe6d13f-6914-406a-9087-0bb013c7a577)
+![1](https://github.com/tesshsu/healthyinfocheckout/assets/3927152/446374c6-b313-4e52-92ee-c42ec33bdd43)
 
 
 ## USAGE & REQUIREMENTS

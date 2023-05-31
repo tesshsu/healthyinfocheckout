@@ -20,6 +20,7 @@
                 <th>Has Prescription</th>
                 <th>Extra note</th>
                 <th>Create At</th>
+                <th>Action</th>
               </tr>
               </thead>
               <tbody>
@@ -31,6 +32,9 @@
                   <td>{% if item.has_prescription == 1 %}Yes{% else %}No{% endif %}</td>
                   <td>{{ item.extra_note is empty ? 'NaN' : item.extra_note }}</td>
                   <td>{{ item.created_at|date('Y-m-d H:i:s') }}</td>
+                  <td>
+                    <a href="{{ path('admin_healthinfo_list_update_form', {'id': item.id}) }}" class="btn btn-primary">Update</a>
+                  </td>
                 </tr>
               {% endfor %}
               </tbody>
